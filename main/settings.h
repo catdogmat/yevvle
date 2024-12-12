@@ -8,7 +8,6 @@
 #include "display.h"
 
 struct Settings {
-    bool mValid : 1 {false};
     bool mTouchWatchDog : 1 {false};
     bool mLeakPinsSet : 1 {false};
 

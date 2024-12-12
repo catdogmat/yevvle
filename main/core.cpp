@@ -1,3 +1,6 @@
+
+#include <fmt/format.h>
+
 #include "core.h"
 #include "deep_sleep.h"
 #include "power.h"
@@ -104,24 +107,24 @@ UI::Menu{"Main Menu", {
                 Peripherals::vibrator(std::vector<int>{75,75,75});
             }));
         }},
-        UI::Action{"Vib 1x75ms", [&](){
+        UI::Action{"Vib 1x75ms", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Peripherals::vibrator(std::vector<int>{75});
             }));
         }},
-        UI::Action{"Vib 200ms", [&](){
+        UI::Action{"Vib 200ms", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Peripherals::vibrator(std::vector<int>{200});
             }));
         }},
-        UI::Action{"Beep", [&](){
+        UI::Action{"Beep", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Peripherals::speaker(
                     std::vector<std::pair<int,int>>{
                     {3200,100},{0,100},{3200,100}});
             }));
         }},
-        UI::Action{"Tetris", [&](){
+        UI::Action{"Tetris", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Peripherals::tetris();
             }));
@@ -136,7 +139,7 @@ UI::Menu{"Main Menu", {
                 Light::toggle();
             }));
         }},
-        UI::Action{"Parallel All", [&](){
+        UI::Action{"Parallel All", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Peripherals::tetris();
             }));
@@ -257,6 +260,8 @@ void Core::boot() {
 }
 
 void Core::firstTimeBoot() {
+    // Recover Settings from Disk // TODO
+    // load NVS and load settings
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
     // Select default voltage 2.6V
