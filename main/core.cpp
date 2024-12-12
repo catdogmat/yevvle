@@ -21,137 +21,7 @@ Core::Core()
 , mBattery{kSettings.mBattery}
 , mTouch{kSettings.mTouch}
 , mNow{mTime.getElements()}
-, mUi{
-UI::Menu{"Main Menu", {
-    UI::Menu{"Clock", {
-        UI::DateTime{"Set DateTime", mTime},
-        UI::Menu{"Calibration", {
-            UI::Action{"Sync", [&]{ mTime.calUpdate(); }},
-            UI::Action{"Reset", [&]{ mTime.calReset(); }},
-            UI::Text{[&] -> std::string {
-                if (!kSettings.mTime.mSync)
-                    return "\n Not calibrated\n Set Date/Time\n then press Sync";
-                auto& sync = *kSettings.mTime.mSync;
-                tmElements_t last;
-                breakTime(sync.mTime.tv_sec, last);
-                char lastTime[32];
-                std::sprintf(lastTime, "\n  %02d:%02d:%02d\n  %02d/%02d/%04d", last.Hour, last.Minute, last.Second, last.Day, last.Month, last.Year + 1970);
-                auto elapsed = mTime.getTimeval().tv_sec - sync.mTime.tv_sec;
-                auto actuallyElapsed = elapsed - kSettings.mTime.mSync->mDrift.tv_sec;
-                bool megasec = actuallyElapsed > 1'000'000;
-                char ppm[10];
-                std::sprintf(ppm, "%+.2f", mTime.getPpm());
-
-                return "\n Last sync on:" + std::string(lastTime) +
-                "\n Err: " + std::to_string(kSettings.mTime.mSync->mDrift.tv_sec) +
-                    "/" + std::to_string(actuallyElapsed / (megasec ? 1'000'000 : 1)) + (megasec ? "M" : "") +
-                "\n PPM:" + std::string(ppm) +
-                "\n Cal:" + std::to_string(kSettings.mTime.mCalibration);
-            }},
-        }},
-        UI::Menu{"Hour Beep", {
-            UI::Bool{"Beep", kSettings.mHourly.mBeep },
-            UI::Bool{"Vibrate", kSettings.mHourly.mVib },
-            UI::Loop<uint8_t>{"First Hour", kSettings.mHourly.mFirst, 24 },
-            UI::Loop<uint8_t>{"Last Hour", kSettings.mHourly.mLast, 24 },
-        }},
-        UI::Menu{"Alarms", {
-        }},
-    }},
-    UI::Menu{"Watchface", {
-        // UI::Loop<int>{"Style",
-        //     []() -> int { return kSettings.mWatchface.mType; },
-        //     [](){ kSettings.mWatchface.mType = (kSettings.mWatchface.mType + 1) % 4; }
-        // },
-        UI::Bool{"Show Battery %", kSettings.mWatchface.mConfig.mBattery},
-        UI::Bool{"Moon Phases", kSettings.mWatchface.mConfig.mMoon},
-        UI::Bool{"Sunset/Sunrise", kSettings.mWatchface.mConfig.mSun},
-        UI::Bool{"Tides", kSettings.mWatchface.mConfig.mTides},
-    }},
-    UI::Menu{"Display", {
-        UI::Bool{"Invert", kSettings.mDisplay.mInvert },
-        UI::Bool{"Border", kSettings.mDisplay.mDarkBorder },
-        UI::Loop<uint8_t>{"Rotation", kSettings.mDisplay.mRotation, 4},
-        UI::Loop<DisplayMode>{"Menu Lut", kSettings.mDisplay.mMenuLut },
-        UI::Loop<DisplayMode>{"Watch Lut", kSettings.mDisplay.mWatchLut },
-    }},
-    UI::Menu{"Power Save", {
-        UI::Bool{"Night (0-6am)", kSettings.mPowerSave.mNight },
-        UI::Bool{"Auto (bat <25%)", kSettings.mPowerSave.mAuto },
-    }},
-    UI::Menu{"Touch", {
-        UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
-        UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
-        // UI::Loop<MeasureCycles>{"Menu", kSettings.mTouch.mCycles[0]},
-        // UI::Loop<MeasureCycles>{"Watch", kSettings.mTouch.mCycles[1]},
-    }},
-    UI::Menu{"Test", {
-        UI::Action{"Vib 2x75ms", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::vibrator(std::vector<int>{75,75,75});
-            }));
-        }},
-        UI::Action{"Vib 1x75ms", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::vibrator(std::vector<int>{75});
-            }));
-        }},
-        UI::Action{"Vib 200ms", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::vibrator(std::vector<int>{200});
-            }));
-        }},
-        UI::Action{"Beep", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::speaker(
-                    std::vector<std::pair<int,int>>{
-                    {3200,100},{0,100},{3200,100}});
-            }));
-        }},
-        UI::Action{"Tetris", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::tetris();
-            }));
-        }},
-        UI::Action{"Light 1s", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Light::onFor(1'000);
-            }));
-        }},
-        UI::Action{"Light toggle", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Light::toggle();
-            }));
-        }},
-        UI::Action{"Display Restore", [&]{
-            mDisplay.setRefreshMode(DisplayMode::FULL);
-            bool inverted = false;
-            while (true) {
-                mDisplay.setInverted(inverted = !inverted);
-                mDisplay.writeAllAndRefresh();
-                if (mTouch.readAndClear() != Touch::Btn::NONE)
-                    break;
-            }
-        }},
-        UI::Action{"Parallel All", [&]{
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                Peripherals::tetris();
-            }));
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                for (auto i=0; i<10; i++) {
-                    delay(1300);
-                    Peripherals::vibrator(std::vector<int>{70});
-                }
-            }));
-            mTasks.emplace_back(std::async(std::launch::async, []{
-                for (auto i=0; i<30; i++) {
-                    delay(1000);
-                    Light::toggle();
-                }
-            }));
-        }},
-    }},
-}}}
+, mUi{createMainMenu()}
 {
 }
 
@@ -173,7 +43,7 @@ void Core::boot() {
         }
         kSettings.mTouchWatchDog = true;
         break;
-    default: // Lets assume first time boot
+    default: // Lets assume first time boot ?
         // ESP_LOGE("ev", "%d", (int)wakeup_reason);
         firstTimeBoot();
         break;
@@ -235,12 +105,57 @@ void Core::boot() {
             }
         }, findUi());
     }
+
     // Finish display, setup touch and finish pending tasks
     mDisplay.hibernate();
     mTouch.setUp(kSettings.mUi.mDepth < 0); // Takes 0.3ms -> 10uAs
     mTasks.clear();
+    mTouch.clear(); // Clear it again in case the tasks took too long
 
-    deepSleep();
+    // ESP_LOGE("deepSleep", "%ld", micros());
+
+    // Calculate stepsize based on battery level or on battery save mode
+    auto stepSize = [&] {
+        if (kSettings.mPowerSave.mNight && mNow.Hour < 7)
+            return 5;
+        if (!kSettings.mPowerSave.mAuto)
+            return 1;
+        if (mBattery.mCurPercent < 100) {
+            return 5;
+        } else if (mBattery.mCurPercent < 200) {
+            return 4;
+        } else if (mBattery.mCurPercent < 500) {
+            return 2;
+        }
+        return 1;
+    }();
+
+    // TODO: When there is an alarm, we need to wake up earlier
+    auto nextFullWake = 60;
+    auto firstMinutesSleep = stepSize - mNow.Minute % stepSize;
+    auto nextPartialWake = firstMinutesSleep + mNow.Minute;
+    // In case the step overflows, we need to chop it, and wake up earlier
+    // kDSState.minutes will be exactly 0 after this trim
+    if (nextPartialWake > nextFullWake)
+        firstMinutesSleep -= nextPartialWake - nextFullWake;
+
+    // ESP_LOGE("", "nextFullWake %d firstMinutesSleep %d nextPartialWake %d", nextFullWake, firstMinutesSleep, nextPartialWake);
+
+    // We can only run wakeupstub when on watchface mode
+    if (kSettings.mUi.mDepth < 0) {
+        kDSState.currentMinutes = mNow.Minute + firstMinutesSleep;
+        kDSState.minutes = nextFullWake - mNow.Minute - firstMinutesSleep;
+        // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
+        kDSState.stepSize = stepSize;
+        // Only trigger the wakeupstub if there is any minute left
+        if (kDSState.minutes > 0)
+            esp_set_deep_sleep_wake_stub(&wake_stub_example);
+    }
+
+    auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
+    esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
+    esp_deep_sleep_start();
+    ESP_LOGE("deepSleep", "never reach!");
 }
 
 void Core::firstTimeBoot() {
@@ -257,6 +172,20 @@ void Core::firstTimeBoot() {
     mTime.setTime(tv);
     // reset calibration to the ESP32
     mTime.calReset();
+
+    // Set oscilator config PCF8563
+    // TODO ?
+
+    // Can take 1ms to run this code // NEEDED TEST?
+    // Set all GPIOs to input that we are not using to avoid leaking power
+    // Set GPIOs 0-39 to input to avoid power leaking out
+    // const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
+    // for (int i = 0; i < GPIO_NUM_MAX; i++) {
+    //     if ((ignore >> i) & 0b1)
+    //         continue;
+    //     // ESP_LOGE("", "%d input", i);
+    //     pinMode(i, INPUT);
+    // }
 }
 const UI::Any& Core::findUi() {
     // Find current UI element in view by recursively finding deeper elements
@@ -322,77 +251,32 @@ void Core::handleTouch() {
     }, item);
 }
 
-/*void Core::NTPSync() {
-    // Select default voltage 2.9V/3.3V for WiFi
-    Power::lock();
-    //sleep(3);
-    // We need Arduino for this (WiFi + NTP)
-    initArduino();
-    showSyncNTP();
-    Power::unlock();
-}*/
+#include <Arduino.h>
+#include <WiFiManager.h>
 
-void Core::deepSleep() {
-    if (!kSettings.mLeakPinsSet) {
-        kSettings.mLeakPinsSet = true;
+void Core::NTPSync() {
+  // Select default voltage 2.9V/3.3V for WiFi
+  // We need Arduino for this (WiFi + NTP)
+  Power::lock();
+//   initArduino();
 
-        // Set oscilator config PCF8563
-        // TODO
+//   WiFi.waitForConnectResult();
 
-        // Can take 1ms to run this code
-        // Set all GPIOs to input that we are not using to avoid leaking power
-        // Set GPIOs 0-39 to input to avoid power leaking out
-        const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
-        for (int i = 0; i < GPIO_NUM_MAX; i++) {
-            if ((ignore >> i) & 0b1)
-                continue;
-            // ESP_LOGE("", "%d input", i);
-            pinMode(i, INPUT);
-        }
-    }
+//   settimeofday_cb([]() { // set callback to execute after time is retrieved
+//     time_t now = time(nullptr);
+//     setTime(now); // update time to TimeLib
+//   });
+//   configTime(0, 0, "pool.ntp.org");
 
-    // ESP_LOGE("deepSleep", "%ld", micros());
+//   // get network time
+//   struct tm timeinfo;
+//   if(!getLocalTime(&timeinfo)){
+//     ESP_LOGE("NTP", "Failed to obtain time");
+//     return;
+//   }
+//   delay(5'000);
 
-    // Calculate stepsize based on battery level or on battery save mode
-    auto stepSize = [&] {
-        if (kSettings.mPowerSave.mNight && mNow.Hour < 7)
-            return 5;
-        if (!kSettings.mPowerSave.mAuto)
-            return 1;
-        if (mBattery.mCurPercent < 100) {
-            return 5;
-        } else if (mBattery.mCurPercent < 200) {
-            return 4;
-        } else if (mBattery.mCurPercent < 500) {
-            return 2;
-        }
-        return 1;
-    }();
+  ESP_LOGE("NTP", "done");
 
-    // TODO: When there is an alarm, we need to wake up earlier
-    auto nextFullWake = 60;
-    auto firstMinutesSleep = stepSize - mNow.Minute % stepSize;
-    auto nextPartialWake = firstMinutesSleep + mNow.Minute;
-    // In case the step overflows, we need to chop it, and wake up earlier
-    // kDSState.minutes will be exactly 0 after this trim
-    if (nextPartialWake > nextFullWake)
-        firstMinutesSleep -= nextPartialWake - nextFullWake;
-
-    // ESP_LOGE("", "nextFullWake %d firstMinutesSleep %d nextPartialWake %d", nextFullWake, firstMinutesSleep, nextPartialWake);
-
-    // We can only run wakeupstub when on watchface mode
-    if (kSettings.mUi.mDepth < 0) {
-        kDSState.currentMinutes = mNow.Minute + firstMinutesSleep;
-        kDSState.minutes = nextFullWake - mNow.Minute - firstMinutesSleep;
-        // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
-        kDSState.stepSize = stepSize;
-        // Only trigger the wakeupstub if there is any minute left
-        if (kDSState.minutes > 0) 
-            esp_set_deep_sleep_wake_stub(&wake_stub_example);
-    }
-
-    auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
-    esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
-    esp_deep_sleep_start();
-    ESP_LOGE("deepSleep", "never reach!");
+  Power::unlock();
 }

@@ -22,10 +22,12 @@ public:
 
 private:
     void firstTimeBoot();
-    void deepSleep(); // Set up device for deep sleep
 
     void handleTouch();
     const UI::Any& findUi();
+    UI::Any createMainMenu();
+
+    void NTPSync();
 
     Display mDisplay;
     Time mTime;

@@ -80,7 +80,9 @@ std::vector<Rect> DefaultWatchface::render() {
     // Moon
     if (config.mMoon) {
       bool color = mSettings.mDisplay.mInvert;
-      drawMoon(getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec), 50, 150, 30, !color, color);
+      auto frac = getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec);
+      mDisplay.drawCircle(50, 150, 30 + 2, 1);
+      drawMoon(frac, 50, 150, 30, !color, color);
       rects.emplace_back(15, 115, 70, 70);
     }
   }
@@ -211,9 +213,6 @@ void DefaultWatchface::drawMoonFast(float p, int x, int y, uint8_t r, uint16_t o
 
 void DefaultWatchface::drawMoon(float p, uint16_t x, uint16_t y, uint16_t radius, uint16_t on, uint16_t off) 
 {
-  mDisplay.drawCircle(x, y, radius + 2, on);
-  mDisplay.drawCircle(x, y, radius + 3, off);
-
   //drawEllipseDifference(x, y, radius * (25 - p) / 25, radius, radius, radius, on);
   
   mDisplay.startWrite();

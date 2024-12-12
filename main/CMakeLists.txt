@@ -25,8 +25,9 @@ set(srcs
     touch.cpp
     peripherals.cpp
     time.cpp
-
+    menus.cpp
     ui.cpp
+
     watchface.cpp
     watchface_default.cpp
 

@@ -9,7 +9,6 @@
 
 struct Settings {
     bool mTouchWatchDog : 1 {false};
-    bool mLeakPinsSet : 1 {false};
 
     struct Hourly {
         bool mBeep {false};
