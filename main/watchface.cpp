@@ -10,6 +10,8 @@ void Watchface::updateCache() {
   auto fillCache = [&](Rect& r, uint8_t* data, bool units, size_t len){
     // Render all the cache elements, the spacing of elements is given by the Rect
     r = units ? rectU() : rectD();
+    // Clear the area!
+    // mDisplay.fillRect(r.x, r.y, r.w, r.h, 0);
     mDisplay.alignRect(r);
     auto size = r.size();
     for (auto d=0; d<len; d++) {
@@ -78,8 +80,16 @@ void Watchface::draw() {
   auto composables = render();
   // ESP_LOGE("comp", "%d", composables.size());
 
+  // DEBUG
+  // for (auto& c : composables)
+  //   mDisplay.drawRect(c.x, c.y, c.w, c.h, 1);
+  // auto ru = rectU();
+  // auto rd = rectD();
+  // mDisplay.drawRect(ru.x, ru.y, ru.w, ru.h, 1);
+  // mDisplay.drawRect(rd.x, rd.y, rd.w, rd.h, 1);
+
   // Convert to aligned rotated coords, makes easier the copy
-  for (auto& c : composables)      
+  for (auto& c : composables)
     mDisplay.alignRect(c);
 
   // Update display / refresh

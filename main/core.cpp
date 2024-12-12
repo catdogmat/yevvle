@@ -71,10 +71,14 @@ UI::Menu{"Main Menu", {
         }},
     }},
     UI::Menu{"Watchface", {
-        UI::Loop<int>{"Style",
-            [] -> int { return kSettings.mWatchface.mType; },
-            []{ kSettings.mWatchface.mType = (kSettings.mWatchface.mType + 1) % 4; }
-        },
+        // UI::Loop<int>{"Style",
+        //     []() -> int { return kSettings.mWatchface.mType; },
+        //     [](){ kSettings.mWatchface.mType = (kSettings.mWatchface.mType + 1) % 4; }
+        // },
+        UI::RefBool{"Show Battery %", kSettings.mWatchface.mConfig.mBattery},
+        UI::RefBool{"Moon Phases", kSettings.mWatchface.mConfig.mMoon},
+        UI::RefBool{"Sunset/Sunrise", kSettings.mWatchface.mConfig.mSun},
+        UI::RefBool{"Tides", kSettings.mWatchface.mConfig.mTides},
     }},
     UI::Menu{"Display", {
         UI::Bool{"Invert",
@@ -236,7 +240,7 @@ void Core::boot() {
     // Show watch face or menu ?
     if (kSettings.mUi.mDepth < 0) {
         mDisplay.setRefreshMode(kSettings.mDisplay.mWatchLut);
-        #define ARGS kSettings.mDisplay, kSettings.mWatchface, mDisplay, mBattery, mNow
+        #define ARGS kSettings.mDisplay, kSettings.mWatchface, mDisplay, mBattery, mTime, mNow
         // Instantiate the watchface type we are using
         switch(kSettings.mWatchface.mType) {
             default: DefaultWatchface(ARGS).draw(); break;
