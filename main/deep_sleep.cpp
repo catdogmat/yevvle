@@ -62,6 +62,8 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   // This sets up the delay to work properly
   ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
 
+  auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
+
   // If we were waiting for a display finish, we need to complete it first
   if (kDSState.displayBusy) {
     kDSState.displayBusy = false;
@@ -71,15 +73,16 @@ void RTC_IRAM_ATTR wake_stub_example(void)
 
     uSpi::init();
 
-    // Wait until display busy goes off
+    // Wait until display busy goes off (this will not be needed in next HW version)
     GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::DisplayPin::Busy
     while(GPIO_INPUT_GET(19) != 0) {
-      microSleep(displayWait);
-      kDSState.updateWait += displayWait;
-      kDSState.updateWaitReduceScale = 0; // Reset it
+      microSleep(busyWait.kWaitStep);
+      busyWait.currentWait += busyWait.kWaitStep;
+      busyWait.missedTimes = 0; // Reset it
     }
-    // Reduce it a bit every iteration
-    kDSState.updateWait -= displayWaitReduce << ++kDSState.updateWaitReduceScale;
+    busyWait.missedTimes = std::min(busyWait.missedTimes, uint8_t(16));
+    uint32_t reduceAmount = busyWait.kReduce << ++busyWait.missedTimes;
+    busyWait.currentWait -= std::min(busyWait.currentWait / 2, reduceAmount);
 
     if (kDSState.redrawDec) {
       kDSState.redrawDec = false;
@@ -95,7 +98,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
     kDSState.currentMinutes += kDSState.stepSize;
     kDSState.minutes -= kDSState.stepSize;
     auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
-    esp_wake_stub_set_wakeup_time(minutes * 60'000'000 - kDSState.updateWait);
+    esp_wake_stub_set_wakeup_time(minutes * 60'000'000 - busyWait.currentWait);
 
     // Set stub entry, then going to deep sleep again.
     esp_wake_stub_sleep(&wake_stub_example);
@@ -170,7 +173,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   kDSState.displayBusy = true;
 
   // Set wakeup timer when we guess display will finish refreshing, to put display to hibernation
-  esp_wake_stub_set_wakeup_time(kDSState.updateWait);
+  esp_wake_stub_set_wakeup_time(busyWait.currentWait);
 
   // Set stub entry, then going to deep sleep again.
   esp_wake_stub_sleep(&wake_stub_example);

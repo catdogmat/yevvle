@@ -30,6 +30,8 @@ struct DisplaySettings {
   DisplayMode mWatchLut : 2 {CUSTOM};
 };
 
+extern int getSetDisplayMode();
+
 struct Rect {
   uint8_t x, y, w, h;
   uint16_t size() const {return static_cast<uint16_t>(w)/8 * h; };

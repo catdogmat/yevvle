@@ -23,6 +23,8 @@ static RTC_DATA_ATTR struct DisplayState {
   DisplayMode mode : 2 {DisplayMode::FAST};
 } kState;
 
+int RTC_IRAM_ATTR getSetDisplayMode() { return kState.mode; };
+
 const SPISettings Display::_spi_settings{kOverdriveSPI ? 26'666'666 : 20'000'000, MSBFIRST, SPI_MODE0};
 
 void Display::_startTransfer()
