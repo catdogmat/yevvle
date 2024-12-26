@@ -110,8 +110,8 @@ void RTC_IRAM_ATTR wake_stub_example(void)
     uint32_t mask;
     touch_ll_read_trigger_status_mask(&mask);
 
-    // 4 = MENU, 32 = BACK/LIGHT, 64 = DOWN, 1 = UP
-    if (mask == 32){
+    // If it is the current set light pad button
+    if ((mask >> kDSState.lightPad) & 1){
       touch_ll_clear_trigger_status_mask(); // This will consume the touch
 
       // LED is powered from VDD, and we need to rise it to 3.3V,

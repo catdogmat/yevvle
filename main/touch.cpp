@@ -38,6 +38,7 @@ void Touch::setUp(bool onlyMenuLight) {
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
   touch_pad_set_group_mask(mask, mask, mask); // Need to reset the mask after FSM on
 
+  kDSState.lightPad = HW::Touch::Pad[mSettings.mMap[HW::Touch::BotL]];
 
   mSettings.mSetup = true;
   mSettings.mSetupMode = onlyMenuLight;

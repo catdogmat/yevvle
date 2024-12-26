@@ -19,6 +19,9 @@ struct DeepSleepState {
   int8_t minutes {10};
   bool redrawDec {false};
   bool displayBusy {false};
+
+  // Light
+  uint8_t lightPad {0};
 };
 
 extern struct DeepSleepState kDSState;
