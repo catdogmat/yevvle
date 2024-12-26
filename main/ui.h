@@ -6,7 +6,9 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+
 #include "display.h"
+#include "touch.h"
 
 #include <magic_enum.hpp>
 
@@ -59,32 +61,64 @@ struct Text {
 };
 
 
-struct RefBool : public Name {
+struct Bool : public Name {
     bool& ref;
     std::string name() const { return (ref ? "X " : "O ") + baseName; }
     void button_menu() const {ref = !ref;} // Toggles
 };
-struct Bool : public Name {
-    std::function<bool()> get;
-    std::function<void(bool)> set;
-
-    std::string name() const { return (get() ? "X " : "O ") + baseName; }
-    void button_menu() const {set(!get());} // Toggles
-};
+// This version is too complex, and saving few bits is not worth
+// struct Bool : public Name {
+//     struct GetSet {
+//         std::function<bool()> get;
+//         std::function<void(bool)> set;
+//     };
+//     std::variant<bool*, GetSet> getset;
+//     bool get() const {
+//         return std::visit(Overload{
+//             [](bool* v) { return *v; },
+//             [](GetSet pair) { return pair.get(); },
+//         }, getset);
+//     }
+//     void set(bool n) const {
+//         std::visit(Overload{
+//             [&](bool* v) { *v = n; },
+//             [&](GetSet pair) { pair.set(n); },
+//         }, getset);
+//     }
+//     std::string name() const { return (get() ? "X " : "O ") + baseName; }
+//     void button_menu() const {set(!get());} // Toggles
+// };
 
 // Small options that have small int items that we loop trough them
 template<typename T>
 struct Loop : public Name {
-    std::function<T()> get;
-    std::function<void()> tick;
+    T& ref;
+    size_t size;
 
+    // For non-enum types
+    template<typename U = T>
+    Loop(std::string baseName, U& ref, size_t size) requires (!std::is_enum_v<U>)
+        : Name(std::move(baseName)), ref(ref), size(size) {}
     std::string name() const requires (!std::is_enum_v<T>) {
-        return std::to_string(get()) + " " + baseName;
+        return std::to_string(ref) + " " + baseName;
     }
+    void button_menu() const requires (!std::is_enum_v<T>) {
+        ref = (T)(((int)ref + 1) % size);;
+    }
+
+    // For enums
+    template<typename U = T>
+    Loop(std::string baseName, U& ref) requires (std::is_enum_v<U>)
+        : Name(std::move(baseName)), ref(ref), size(magic_enum::enum_count<U>()) {}
     std::string name() const requires (std::is_enum_v<T>) {
-        return std::string(magic_enum::enum_name(get())) + " " + baseName;
+        auto sv = magic_enum::enum_name(ref);
+        if (sv[0] == '_')
+            sv.remove_prefix(1);
+        return std::string(sv) + " " + baseName;
     }
-    void button_menu() const {tick();}
+    void button_menu() const requires (std::is_enum_v<T>) {
+        ref = magic_enum::enum_values<T>()[(magic_enum::enum_index(ref).value_or(size) + 1) % size];
+    }
 };
 
 struct Action : public Name {
@@ -129,12 +163,11 @@ using Any = std::variant<
     Menu,
     Sub,
     Action,
-    Loop<int>,
     Loop<DisplayMode>,
     Loop<MeasureRate>,
     Loop<MeasureCycles>,
+    Loop<uint8_t>,
     Bool,
-    RefBool,
     Number,
     Text,
     Name>;

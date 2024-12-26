@@ -23,11 +23,11 @@ enum DisplayMode {
 
 struct DisplaySettings {
   // Settings that can be changed
-  bool mInvert : 1 {false};
-  bool mDarkBorder : 1 {false};
-  uint8_t mRotation : 2 {2};
-  DisplayMode mMenuLut : 2 {FAST};
-  DisplayMode mWatchLut : 2 {CUSTOM};
+  bool mInvert {false};
+  bool mDarkBorder {false};
+  uint8_t mRotation {2};
+  DisplayMode mMenuLut {FAST};
+  DisplayMode mWatchLut {CUSTOM};
 };
 
 extern int getSetDisplayMode();

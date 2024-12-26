@@ -12,10 +12,10 @@ struct Settings {
     bool mLeakPinsSet : 1 {false};
 
     struct Hourly {
-        bool mBeep : 1 {false};
-        bool mVib : 1 {false};
-        uint8_t mStart : 5 {0};
-        uint8_t mEnd : 5 {24};
+        bool mBeep {false};
+        bool mVib {false};
+        uint8_t mFirst {23};
+        uint8_t mLast {0};
     } mHourly;
 
     UiSettings mUi;

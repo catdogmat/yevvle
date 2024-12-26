@@ -50,22 +50,10 @@ UI::Menu{"Main Menu", {
             }},
         }},
         UI::Menu{"Hour Beep", {
-            UI::Bool{"Beep",
-                [](){return kSettings.mHourly.mBeep; },
-                [](bool val){ kSettings.mHourly.mBeep = val; }
-            },
-            UI::Bool{"Vibrate",
-                [](){return kSettings.mHourly.mVib; },
-                [](bool val){ kSettings.mHourly.mVib = val; }
-            },
-            UI::Loop<int>{"St Hour",
-                []() -> int { return kSettings.mHourly.mStart; },
-                [](){ kSettings.mHourly.mStart = (kSettings.mHourly.mStart + 1) % 24; }
-            },
-            UI::Loop<int>{"End Hour",
-                []() -> int { return kSettings.mHourly.mEnd; },
-                [](){ kSettings.mHourly.mEnd = (kSettings.mHourly.mEnd + 1) % 24; }
-            }
+            UI::Bool{"Beep", kSettings.mHourly.mBeep },
+            UI::Bool{"Vibrate", kSettings.mHourly.mVib },
+            UI::Loop<uint8_t>{"First Hour", kSettings.mHourly.mFirst, 24 },
+            UI::Loop<uint8_t>{"Last Hour", kSettings.mHourly.mLast, 24 },
         }},
         UI::Menu{"Alarms", {
         }},
@@ -75,45 +63,27 @@ UI::Menu{"Main Menu", {
         //     []() -> int { return kSettings.mWatchface.mType; },
         //     [](){ kSettings.mWatchface.mType = (kSettings.mWatchface.mType + 1) % 4; }
         // },
-        UI::RefBool{"Show Battery %", kSettings.mWatchface.mConfig.mBattery},
-        UI::RefBool{"Moon Phases", kSettings.mWatchface.mConfig.mMoon},
-        UI::RefBool{"Sunset/Sunrise", kSettings.mWatchface.mConfig.mSun},
-        UI::RefBool{"Tides", kSettings.mWatchface.mConfig.mTides},
+        UI::Bool{"Show Battery %", kSettings.mWatchface.mConfig.mBattery},
+        UI::Bool{"Moon Phases", kSettings.mWatchface.mConfig.mMoon},
+        UI::Bool{"Sunset/Sunrise", kSettings.mWatchface.mConfig.mSun},
+        UI::Bool{"Tides", kSettings.mWatchface.mConfig.mTides},
     }},
     UI::Menu{"Display", {
-        UI::Bool{"Invert",
-            []{return kSettings.mDisplay.mInvert; },
-            [](bool val){ kSettings.mDisplay.mInvert = val; }
-        },
-        UI::Bool{"Border",
-            []{return kSettings.mDisplay.mDarkBorder; },
-            [](bool val){ kSettings.mDisplay.mDarkBorder = val; }
-        },
-        UI::Loop<int>{"Rotation",
-            [] -> int { return kSettings.mDisplay.mRotation; },
-            []{ kSettings.mDisplay.mRotation = (kSettings.mDisplay.mRotation + 1) % 4; }
-        },
-        UI::Loop<DisplayMode>{"Menu Lut",
-            [] -> DisplayMode { return kSettings.mDisplay.mMenuLut; },
-            []{ kSettings.mDisplay.mMenuLut = (DisplayMode)((kSettings.mDisplay.mMenuLut + 1) % 3); }
-        },
-        UI::Loop<DisplayMode>{"Watch Lut",
-            [] -> DisplayMode { return kSettings.mDisplay.mWatchLut; },
-            []{ kSettings.mDisplay.mWatchLut = (DisplayMode)((kSettings.mDisplay.mWatchLut + 1) % 3); }
-        },
+        UI::Bool{"Invert", kSettings.mDisplay.mInvert },
+        UI::Bool{"Border", kSettings.mDisplay.mDarkBorder },
+        UI::Loop<uint8_t>{"Rotation", kSettings.mDisplay.mRotation, 4},
+        UI::Loop<DisplayMode>{"Menu Lut", kSettings.mDisplay.mMenuLut },
+        UI::Loop<DisplayMode>{"Watch Lut", kSettings.mDisplay.mWatchLut },
     }},
     UI::Menu{"Power Save", {
-        UI::Bool{"Night (0-6am)",
-            []{return kSettings.mPowerSave.mNight; },
-            [](bool val){ kSettings.mPowerSave.mNight = val; }
-        },
-        UI::Bool{"Auto (bat <25%)",
-            []{return kSettings.mPowerSave.mAuto; },
-            [](bool val){ kSettings.mPowerSave.mAuto = val; }
-        },
+        UI::Bool{"Night (0-6am)", kSettings.mPowerSave.mNight },
+        UI::Bool{"Auto (bat <25%)", kSettings.mPowerSave.mAuto },
     }},
-
     UI::Menu{"Touch", {
+        UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
+        UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
+        // UI::Loop<MeasureCycles>{"Menu", kSettings.mTouch.mCycles[0]},
+        // UI::Loop<MeasureCycles>{"Watch", kSettings.mTouch.mCycles[1]},
     }},
     UI::Menu{"Test", {
         UI::Action{"Vib 2x75ms", [&]{
@@ -152,6 +122,16 @@ UI::Menu{"Main Menu", {
             mTasks.emplace_back(std::async(std::launch::async, []{
                 Light::toggle();
             }));
+        }},
+        UI::Action{"Display Restore", [&]{
+            mDisplay.setRefreshMode(DisplayMode::FULL);
+            bool inverted = false;
+            while (true) {
+                mDisplay.setInverted(inverted = !inverted);
+                mDisplay.writeAllAndRefresh();
+                if (mTouch.readAndClear() != Touch::Btn::NONE)
+                    break;
+            }
         }},
         UI::Action{"Parallel All", [&]{
             mTasks.emplace_back(std::async(std::launch::async, []{
@@ -194,6 +174,7 @@ void Core::boot() {
         kSettings.mTouchWatchDog = true;
         break;
     default: // Lets assume first time boot
+        // ESP_LOGE("ev", "%d", (int)wakeup_reason);
         firstTimeBoot();
         break;
     }
@@ -201,8 +182,8 @@ void Core::boot() {
     // Beep conditions
     if (mNow.Minute == 0
         && wakeup_reason == ESP_SLEEP_WAKEUP_TIMER
-        && mNow.Hour >= kSettings.mHourly.mStart
-        && mNow.Hour <= kSettings.mHourly.mEnd)
+        && mNow.Hour >= kSettings.mHourly.mFirst
+        && mNow.Hour <= kSettings.mHourly.mLast)
     {
         if (kSettings.mHourly.mBeep) {
             mTasks.emplace_back(std::async(std::launch::async, []{
