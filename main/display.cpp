@@ -140,10 +140,10 @@ void Display::init() {
 void Display::_setCustomLut(const DisplayMode& mode) {
   auto& lut = [&] -> const LUT& {
     if (mode == CUSTOM) {
-      return watchLut;
+      return SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP;
     }
-    return watchLut;
-    // Other possible LUTS to implement
+    return SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP;
+    // Other possible LUTS to use
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH;
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH;
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP;

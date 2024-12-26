@@ -57,20 +57,80 @@ struct LUT {
     return a;
   }
 };
-// 0: 
-constexpr auto watchLut = LUT{
+
+constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH = LUT{
   .group {
-    // {
-    //   .phase = {
-    //   {.bb = B, .bw = W, .wb = B, .ww = W, .time = 2},
-    //   },
-    //   .fr = 2, // 50ms
-    // },
+    // Go the wrong way
+    {
+      .phase = {{.bb = W, .bw = B, .wb = W, .ww = B, .time = 0x0A}},
+      .fr = 2,
+    },
+    // All Black/White with a space in between N times
     {
       .phase = {
-        // {.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x1},
-        // {.bb = O, .bw = B, .wb = W, .ww = O, .time = 0x1},
-        // {.bb = O, .bw = W, .wb = B, .ww = O, .time = 0x2},
+        {.bb = B, .bw = B, .wb = B, .ww = B, .time = 0x08},
+        {.bb = O, .bw = O, .wb = O, .ww = O, .time = 0x01},
+        {.bb = W, .bw = W, .wb = W, .ww = W, .time = 0x08},
+        {.bb = O, .bw = O, .wb = O, .ww = O, .time = 0x01},
+      },
+      .rp = 2, // Repeat 3 times
+      .fr = 2,
+    },
+    // Go to the proper values
+    {
+      .phase = {{.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x0A}},
+      .fr = 2,
+    }
+  },
+  .eopt {0x22}, // Normal
+  .vgh {0x17}, // Max 20V
+  .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
+  .vcom {0x20}, // VCOM 0x20 best
+};
+
+constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH = LUT{
+  .group {
+    {
+      .phase = {
+        {.bb = O, .bw = W, .wb = B, .ww = O, .time = 0x0F},
+        {.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x01},
+        {.bb = O, .bw = O, .wb = O, .ww = O, .time = 0x01},
+      },
+      .fr = 2,
+    }
+  },
+  .eopt {0x02}, // Normal ?
+  .vgh {0x17}, // Max 20V
+  .vsh1_vsh2_vsl {{0x41, 0xB0, 0x32}}, //15/?/-15
+  .vcom {0x28}, // VCOM ? 
+};
+// NOTE: After several refreshes using SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH, you may notice the WHITE color
+// goes GRAY and contrast decrease a lot. Use the LUT below to avoid that issue.
+// NOTE: The LUT below will have the source output "keep previous output before power off", so the service life may be affected.
+constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP = []{
+  auto ref = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH;
+  ref.eopt = 0x07;
+  return ref;
+}();
+
+constexpr auto SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP = LUT{
+  .group {
+    {
+      .phase = {{.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x0A}},
+      .fr = 2,
+    }
+  },
+  .eopt {0x07}, // "keep previous output before power off"
+  .vgh {0x17}, // Max 20V
+  .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
+  .vcom {0x20}, // VCOM 0x20 best
+};
+
+
+constexpr auto testLut = LUT{
+  .group {
+    {
+      .phase = {
         {.bb = O, .bw = W, .wb = B, .ww = O, .time = 0x2},
       },
       .fr = 2, // 50ms
@@ -87,53 +147,3 @@ constexpr auto watchLut = LUT{
   .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
   .vcom {0x20}, // VCOM 0x20 best, 0x08 ok, 0x78 ?
 };
-
-constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH = LUT{
-  .group {
-    // Go the wrong way
-    {
-      .phase = {{.bb = W, .bw = B, .wb = W, .ww = B, .time = 0x0A}},
-      .fr = 2,
-    },
-    // All Black/White with a space in between N times
-    {
-      .phase = {
-        {.bb = B, .bw = B, .wb = B, .ww = B, .time = 0x0A},
-        {.bb = O, .bw = O, .wb = O, .ww = O, .time = 0x02},
-        {.bb = W, .bw = W, .wb = W, .ww = W, .time = 0x0A},
-        {.bb = O, .bw = O, .wb = O, .ww = O, .time = 0x02},
-      },
-      .rp = 1, // Repeat 2 times
-      .fr = 2,
-    },
-    // Go to the proper values
-    {
-      .phase = {{.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x0A}},
-      .fr = 2,
-    }
-  },
-  .eopt {0x22}, // Normal
-  .vgh {0x17}, // Max 20V
-  .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
-  .vcom {0x20}, // VCOM 0x20 best
-};
-constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH = LUT{
-  .group {
-    {
-      .phase = {{.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x0A}},
-      .fr = 2,
-    }
-  },
-  .eopt {0x22}, // Normal
-  .vgh {0x17}, // Max 20V
-  .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
-  .vcom {0x20}, // VCOM 0x20 best
-};
-// NOTE: After several refreshes using SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH, you may notice the WHITE color
-// goes GRAY and contrast decrease a lot. Use the LUT below to avoid that issue.
-// NOTE: The LUT below will have the source output "keep previous output before power off", so the service life may be affected.
-constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP = []{
-  auto ref = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH;
-  ref.eopt = 0x07;
-  return ref;
-}();
