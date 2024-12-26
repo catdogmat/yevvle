@@ -19,11 +19,11 @@ struct WatchfaceSettings {
 
         struct Units {
             Rect coord {}; 
-            uint8_t data[270 * 10]{};
+            uint8_t data[270 * 10]{}; // 2700 B = 30%
         } mUnits;
         struct Decimal {
             Rect coord {};
-            uint8_t data[270 * 6]{};
+            uint8_t data[270 * 6]{}; // 1620 B = 20%
         } mDecimal;
     } mCache;
 
