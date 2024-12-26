@@ -178,22 +178,11 @@ UI::Menu{"Main Menu", {
 void Core::boot() {
     // ESP_LOGE("", "boot %lu", micros());
 
-    if (kSettings.mValid) {
-        // Recover Settings from Disk // TODO
-        kSettings.mValid = true;
-    }
-
-    //Wake up reason affects how to proceed
+    // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
-        auto touch_pad = esp_sleep_get_touchpad_wakeup_status();
-        if (touch_pad != TOUCH_PAD_MAX) {
-            // ESP_LOGE("pad", "%d", (int)touch_pad);
-            handleTouch(touch_pad);
-        } else {
-            ESP_LOGE("Touch", "TouchPad error");
-        }
+        handleTouch();
     } break;
     case ESP_SLEEP_WAKEUP_TIMER: // Internal Timer
     case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm ?
@@ -302,22 +291,22 @@ const UI::Any& Core::findUi() {
     return *item;
 }
 
-void Core::handleTouch(const touch_pad_t touch_pad) {
+void Core::handleTouch() {
     // Clear WatchDog since we received a valid touch
     kSettings.mTouchWatchDog = false;
 
     // Convert to what button was it
-    // TODO: Unmap the mMap back
-    Touch::Btn btn = static_cast<Touch::Btn>(HW::Touch::Num2Btn[touch_pad]);
+    Touch::Btn btn = mTouch.readAndClear();
+    // ESP_LOGE("parsed", "%d, %s", btn, std::string(magic_enum::enum_name(btn)).c_str());
 
     auto& ui = kSettings.mUi;
     // ESP_LOGE("ui", "depth%d st%d", ui.mDepth, ui.mState[ui.mDepth]);
 
     // Button press on the watchface
     if (ui.mDepth < 0) {
-        if (btn == Touch::Light) {
+        if (btn == Touch::LIGHT) {
             Light::toggle();
-        } else if (btn == Touch::Menu) {
+        } else if (btn == Touch::MENU) {
             ui.mDepth = 0;
         }
         return;
@@ -332,25 +321,21 @@ void Core::handleTouch(const touch_pad_t touch_pad) {
             e.button(btn);
         } else {
             // If a generic button handler is not implemented, try the specific ones
-            switch (btn) {
-            case Touch::Back: {
+            if (btn & Touch::BACK) {
                 if constexpr (has_button_back<E>::value) {
                     e.button_back();
                 } else {
                     // Default option is to go back in the UI
                     ui.mDepth--;
                 }
-            } break;
-            case Touch::Menu: {
+            } else if (btn & Touch::MENU) {
                 if constexpr (has_button_menu<E>::value) {
                     e.button_menu();
                 }
-            } break;
-            default: {
+            } else {
                 if constexpr (has_button_updown<E, int>::value) {
-                    e.button_updown(btn == Touch::Up ? 1 : -1);
+                    e.button_updown(btn == Touch::DOWN ? -1 : 1);
                 }
-            } break;
             }
         }
     }, item);

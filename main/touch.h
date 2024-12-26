@@ -1,12 +1,32 @@
 #pragma once
 
+#include <array>
 #include <cstdint> 
 
+#include <magic_enum.hpp>
+
+enum MeasureRate {
+    _125ms = 1, // Extremely fast
+    _250ms = 2,
+    _500ms = 4,
+    _1s = 8,
+    _2s = 16,
+    // _4s = 32, // Not possible, limit is 2s
+};
+
+enum MeasureCycles {
+    _31ms = 1,
+    // _62ms = 2,
+};
+
 struct TouchSettings {
-    uint16_t mThreshold{35};
-    uint16_t mMeasCycles{1024};
-    uint16_t mMeasInterval{4*4096};
-    uint8_t mMap[4]{0,1,2,3};
+    // More cycles more accurate, and more power
+    // More often checks, also more power
+    MeasureCycles mCycles[2] = {_31ms};
+    MeasureRate mRate[2] = {_250ms, _2s};
+
+    std::array<uint8_t, 4> mThresholds{{30, 30, 30, 30}};
+    std::array<uint8_t, 4> mMap{{0,1,2,3}};
 
     bool mSetup : 1 {false};
     bool mSetupMode : 1 {false};
@@ -21,13 +41,15 @@ public:
     void setUp(bool onlyMenuLight);
 
     enum Btn {
-        TopRight,
-        TopLeft,
-        BotLeft,
-        BotRight,
-        Menu=TopLeft,
-        Back=BotLeft,
-        Up=TopRight,
-        Down=BotRight,
-        Light=BotLeft};
+        NONE = 0,
+        DOWN = 0b0001,
+        UP   = 0b0010,
+        MENU = 0b0100,
+        BACK = 0b1000,
+        // Alias
+        LIGHT = BACK,
+    };
+    Btn read() const;
+    void clear() const;
+    Btn readAndClear() const;
 };

@@ -131,6 +131,8 @@ using Any = std::variant<
     Action,
     Loop<int>,
     Loop<DisplayMode>,
+    Loop<MeasureRate>,
+    Loop<MeasureCycles>,
     Bool,
     RefBool,
     Number,

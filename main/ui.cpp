@@ -38,11 +38,11 @@ void Sub::button_menu() const {
         if constexpr (has_capture_input<decltype(e)>::value) {
             ui.mDepth++; // Increase depth and let the sub handle it
         } else if constexpr (has_button<decltype(e)>::value) {
-            e.button(Touch::Menu);
+            e.button(Touch::MENU);
         } else if constexpr (has_button_menu<decltype(e)>::value) {
             e.button_menu();
         } else {
-            ESP_LOGE("","Uimplemented!");
+            ESP_LOGE("","Unimplemented!");
         }
     }, item);
 }

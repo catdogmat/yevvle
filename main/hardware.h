@@ -1,13 +1,16 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 
 namespace HW {
 
 namespace Touch {
-    constexpr uint8_t Pin[] = {2,4,12,14};
-    constexpr uint8_t Num[] = {0,2,5,6};
-    constexpr uint8_t Num2Btn[] = {0, 255, 1, 255, 255, 2, 3};
+    constexpr std::array<uint8_t, 4> Pin = {{2,4,12,14}};
+    // Layout of pads are TR=0, TL=2, BL=5, BR=6
+    // Default map to DOWN=BR=6, UP=TR=0, MENU=TL=2, BACK=BL=5
+    enum PadNames {BotR, TopR, TopL, BotL};
+    constexpr std::array<uint8_t, 4> Pad = {{6,0,2,5}};
 }
 
 namespace DisplayPin {

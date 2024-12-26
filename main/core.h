@@ -24,7 +24,7 @@ private:
     void firstTimeBoot();
     void deepSleep(); // Set up device for deep sleep
 
-    void handleTouch(const touch_pad_t touch_pad);
+    void handleTouch();
     const UI::Any& findUi();
 
     Display mDisplay;
