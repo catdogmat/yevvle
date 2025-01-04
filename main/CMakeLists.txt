@@ -32,6 +32,8 @@ set(srcs
     watchface_default.cpp
 
     deep_sleep.cpp
+
+    ble.cpp
 )
 
 set(CMAKE_CXX_STANDARD 23)
@@ -44,4 +46,5 @@ idf_component_register(SRCS ${srcs} INCLUDE_DIRS ${includedirs} REQUIRES ${requi
 target_compile_options(${COMPONENT_TARGET} PUBLIC
     #-flto
     -Wno-volatile
+    -fpermissive
 )

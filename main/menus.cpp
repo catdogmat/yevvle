@@ -101,6 +101,13 @@ UI::Any Core::createMainMenu() {
           Peripherals::tetris();
         }));
       }},
+      UI::Action{"BLE Test", [&]{
+        extern void ble_main(void);
+        mTasks.emplace_back(std::async(std::launch::async, []{
+          ble_main();
+          delay(50'000);
+        }));
+      }},
       UI::Action{"Light toggle", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
           Light::toggle();
