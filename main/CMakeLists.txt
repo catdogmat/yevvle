@@ -10,6 +10,7 @@ set(requires
     GfxLibrary
     Time
     magic_enum
+    sunset
 )
 
 set(privrequires

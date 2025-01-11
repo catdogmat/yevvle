@@ -8,6 +8,8 @@
 #include "fonts/DSEG7_Classic_Regular_39.h"
 #include "icons.h"
 
+#include <sunset.h>
+
 double JulianDateFromUnixTime(uint64_t t){
 	//Not valid for dates before Oct 15, 1582
 	return (t / 86'400.0) + 2440587.5;
@@ -27,11 +29,6 @@ double getIlluminatedFractionOfMoon(uint64_t t){
     const auto D = mod360(297.8501921 + 445267.1114034*T - 0.0018819*T*T + 1.0/545868.0*T*T*T - 1.0/113065000.0*T*T*T*T)*toRad; //47.2
     const auto M = mod360(357.5291092 + 35999.0502909*T - 0.0001536*T*T + 1.0/24490000.0*T*T*T)*toRad; //47.3
     const auto Mp = mod360(134.9633964 + 477198.8675055*T + 0.0087414*T*T + 1.0/69699.0*T*T*T - 1.0/14712000.0*T*T*T*T)*toRad; //47.4
-
-    // const auto i=mod360(0 - D*180/PI - 6.289 * sin(Mp) + 2.1 * sin(M) -1.274 * sin(2*D - Mp) -0.658 * sin(2*D) -0.214 * sin(2*Mp) -0.11 * sin(D))*toRad;
-
-    // const auto k=(1 + cos(i))/2;
-    // const auto r = std::fmod(-i / PI / 2 * 100 + 100, 100.f);
 
     //48.4
     const auto i=mod360(180 - D*180/PI - 6.289 * sin(Mp) + 2.1 * sin(M) -1.274 * sin(2*D - Mp) -0.658 * sin(2*D) -0.214 * sin(2*Mp) -0.11 * sin(D))*toRad;
@@ -69,7 +66,7 @@ std::vector<Rect> DefaultWatchface::render() {
     rects.emplace_back(92, 30, 12, 35);
   }
 
-  // Hour / Moon
+  // Hour / Moon / Sun
   if (redraw || store.mHour != mNow.Hour) {
     store.mHour = mNow.Hour;
     mDisplay.setFont(&DSEG7_Classic_Bold_53);
@@ -81,9 +78,38 @@ std::vector<Rect> DefaultWatchface::render() {
     if (config.mMoon) {
       bool color = mSettings.mDisplay.mInvert;
       auto frac = getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec);
-      mDisplay.drawCircle(50, 150, 30 + 2, 1);
       drawMoon(frac, 50, 150, 30, !color, color);
-      rects.emplace_back(15, 115, 70, 70);
+      // ESP_LOGE("frac", "%f", frac);
+
+      mDisplay.drawCircle(50, 150, 30, 1);
+      mDisplay.setFont(NULL);
+      mDisplay.setCursor(40, 185);
+      mDisplay.printf("%.2f", frac);
+
+      rects.emplace_back(15, 115, 85, 85);
+    }
+    // Sun
+    if (config.mSun) {
+      SunSet sunset(51.43888, -0.5116, 0);
+      auto& elements = mTime.getElements();
+      sunset.setCurrentDate(elements.Year + 1970, elements.Month, elements.Day);
+      uint16_t rise = sunset.calcSunrise() + 0.5; // For the rounding
+      uint16_t set = sunset.calcSunset() + 0.5; // For the rounding
+      // Current % in the day
+      float perc = 1.f * ((elements.Hour * 60 + elements.Minute) - rise) / (set - rise);
+      // ESP_LOGE("perc", "%f", perc);
+
+      mDisplay.setFont(NULL);
+      mDisplay.setCursor(110, 175);
+      mDisplay.printf("%02d:%02d", rise / 60, rise % 60);
+      mDisplay.setCursor(155, 175);
+      mDisplay.printf("%02d:%02d", set / 60, set % 60);
+
+      mDisplay.drawCircleHelper(145, 170, 35, 0b11, 1);
+      if (perc > 0 && perc < 1)
+        mDisplay.fillCircle(145 - 35 * cos(perc * PI), 170 - 35 * sin(perc * PI), 5, 1);
+
+      rects.emplace_back(120, 120, 80, 80);
     }
   }
 
@@ -229,66 +255,3 @@ void DefaultWatchface::drawMoon(float p, uint16_t x, uint16_t y, uint16_t radius
   else
     drawEllipse(x, y, radius * (p - 75) / 25, radius, on);
 }
-
-
-
-// void DefaultWatchface::date(int16_t x, int16_t y){
-//     mDisplay.setFont(&Seven_Segment10pt7b);
-
-//     mDisplay.setCursor(x, y);
-
-//     String dayOfWeek = dayShortStr(mNow.Wday);
-//     mDisplay.setCursor(x, y);
-//     mDisplay.println(dayOfWeek);
-
-//     String month = monthShortStr(mNow.Month);
-//     mDisplay.setCursor(x + 70, y);
-//     mDisplay.println(month);
-
-//     mDisplay.setFont(&DSEG7_Classic_Regular_15);
-//     mDisplay.setCursor(x + 40, y+1);
-//     if(mNow.Day < 10){
-//         mDisplay.print("0");
-//     }
-//     mDisplay.println(mNow.Day);
-//     mDisplay.setCursor(x + 110, y+1);
-//     mDisplay.println(tmYearToCalendar(mNow.Year));// offset from 1970, since year is stored in uint8_t
-// }
-
-// void DefaultWatchface::batteryIcon(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
-//     mDisplay.drawRect(x + 2, y + 0, w - 4, h - 0, color);
-//     mDisplay.drawRect(x + 1, y + 1, w - 2, h - 2, color);
-//     mDisplay.drawRect(x + 0, y + 2, w - 0, h - 4, color);
-//     // Pointy end
-//     // mDisplay.drawRect(x + w, y + 4, 2, h - 8, color);
-// }
-// void DefaultWatchface::battery(int16_t x, int16_t y) {
-//     //mDisplay.drawBitmap(154, 73, battery, 37, 21, mainColor);
-//     batteryIcon(140, 73, 55, 23, mainColor);
-
-//     mDisplay.setTextSize(2);
-//     mDisplay.setFont(NULL);
-//     // mDisplay.setFont(&FreeMonoBold9pt7b);
-//     // mDisplay.setFont(&Seven_Segment10pt7b);
-
-//     mDisplay.setCursor(142, 77);
-//     float perc = mBattery.mCurPercent;
-//     mDisplay.printf("%.1f", perc+90);
-//     //display.fillRect(159, 78, 27, BATTERY_SEGMENT_HEIGHT, mainColor);//clear battery segments
-//     // if(VBAT > 4.1){
-//     //     batteryLevel = 3;
-//     // }
-//     // else if(VBAT > 3.95 && VBAT <= 4.1){
-//     //     batteryLevel = 2;
-//     // }
-//     // else if(VBAT > 3.80 && VBAT <= 3.95){
-//     //     batteryLevel = 1;
-//     // }
-//     // else if(VBAT <= 3.80){
-//     //     batteryLevel = 0;
-//     // }
-
-//     // for(int8_t batterySegments = 0; batterySegments < batteryLevel; batterySegments++){
-//     //     display.fillRect(159 + (batterySegments * BATTERY_SEGMENT_SPACING), 78, BATTERY_SEGMENT_WIDTH, BATTERY_SEGMENT_HEIGHT, mainColor);
-//     // }
-// }

@@ -108,7 +108,7 @@ void Core::boot() {
 
     // Finish display, setup touch and finish pending tasks
     mDisplay.hibernate();
-    mTouch.setUp(kSettings.mUi.mDepth < 0); // Takes 0.3ms -> 10uAs
+    mTouch.setUp(kSettings.mUi.mDepth < 0);
     mTasks.clear();
     mTouch.clear(); // Clear it again in case the tasks took too long
 

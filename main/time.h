@@ -6,8 +6,8 @@
 #include <optional>
 
 // constexpr static uint32_t kDefaultCalibration{16'000'000};
-// -136ppm, based on tests, better starting point
-constexpr static uint32_t kDefaultCalibration{15'997'825};
+// -137ppm, based on tests, better starting point
+constexpr static uint32_t kDefaultCalibration{15'997'810};
 
 struct TimeSync {
     timeval mTime;
@@ -19,7 +19,7 @@ struct TimeSettings {
     // 1/32768 * 2^19 = 16'000'000
     uint32_t mCalibration{kDefaultCalibration};
 
-    // uint8_t mZone{0};
+    int16_t mMinutesWest{0};
     std::optional<TimeSync> mSync;
 };
 
@@ -30,7 +30,6 @@ class Time {
     TimeSettings& mSettings;
 
     timeval mTv;
-    //struct timezone mTimezone;
     tmElements_t mElements;
 
 public:

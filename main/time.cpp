@@ -7,9 +7,8 @@
 
 void Time::readTime() {
     gettimeofday(&mTv, NULL);
-    // TODO: Apply timezone correction manually, since IDF does not handle it
-    // timezone t;
-    breakTime(mTv.tv_sec, mElements);
+    // Apply timezone manually only to Elements
+    breakTime(mTv.tv_sec + mSettings.mMinutesWest * 60, mElements);
 }
 
 void Time::adjustTime(const timeval& time) {
@@ -25,7 +24,7 @@ void Time::adjustTime(const int32_t& seconds) {
 }
 
 void Time::setTime(const tmElements_t& elements) {
-    setTime(makeTime(elements));
+    setTime(makeTime(elements) - mSettings.mMinutesWest * 60);
 }
 
 void Time::setTime(const timeval tm) {

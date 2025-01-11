@@ -33,5 +33,7 @@ constexpr uint8_t kVoltageSelectPin = 13;
 // constexpr uint8_t kRevision = 1; // Original
 constexpr uint8_t kRevision = 2; // New 2024/Oct / Swap PowerLevels
 // constexpr uint8_t kRevision = 3; // New 2024/Nov / Add Busy Interrupt
+// constexpr uint8_t kRevision = 4; // New 2025 / Complete LoRa redesign + GPS
+
 
 } // namespace HW
