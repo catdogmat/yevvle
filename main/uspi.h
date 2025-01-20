@@ -4,55 +4,69 @@
 #include "soc/spi_struct.h"
 #include "soc/dport_reg.h"
 
+#include "hardware.h"
 #include "settings.h"
 #include "deep_sleep_utils.h"
 
 namespace uSpi {
+  constexpr auto clockDiv = 266241; // or even 8193 for 26MHz SPI !
+
   spi_dev_t& dev = *(reinterpret_cast<volatile spi_dev_t *>(DR_REG_SPI3_BASE));
 
   void RTC_IRAM_ATTR init() {
-    auto clockDiv = 266241; // or even 8193 for 26MHz SPI !
+    // Initialize all to 0
+    memset((void*)&dev, 0, sizeof(dev));
 
-    // pinMode(HW::DisplayPin::Sck, INPUT);
-    GPIO_MODE_INPUT(18);
-    // TODO: Make it using the variable HW::DisplayPin::Sck
-
-    dev.slave.trans_done = 0;
-    dev.slave.val = 0;
-    dev.pin.val = 0;
-    dev.user.val = 0;
-    dev.user1.val = 0;
-    dev.ctrl.val = 0;
-    dev.ctrl1.val = 0;
-    dev.ctrl2.val = 0;
-    dev.clock.val = 0;
-
+    // Set
+    dev.clock.val = clockDiv;
     dev.user.usr_mosi = 1;
-    dev.user.usr_miso = 1;
+    dev.user.usr_miso = 0; // We do not want to read anything
     dev.user.doutdin = 1;
+    dev.user.cs_setup = 1;
+    dev.user.cs_hold = 1;
 
     // Mode 0
-    dev.pin.ck_idle_edge = 0;
     dev.user.ck_out_edge = 0;
     dev.ctrl.wr_bit_order = 0; //MSBFIRST
     dev.ctrl.rd_bit_order = 0;
-    dev.clock.val = clockDiv;
 
-    // pinMode(HW::DisplayPin::Sck, OUTPUT);
-    gpio_matrix_out(HW::DisplayPin::Sck, VSPICLK_OUT_IDX, false, false);
+#if(HW_VERSION < 3)
+    dev.pin.ck_idle_edge = 0;
 
-    // pinMode(HW::DisplayPin::Mosi, OUTPUT);
-    gpio_matrix_out(HW::DisplayPin::Mosi, VSPID_IN_IDX, false, false);
+    // pinMode(HW::Display::Sck, OUTPUT);
+    gpio_matrix_out(HW::Display::Sck, VSPICLK_OUT_IDX, false, false);
 
-    dev.user.cs_setup = 1;
-    dev.user.cs_hold = 1;
-    // pinMode(HW::DisplayPin::Cs, OUTPUT);
-    gpio_matrix_out(HW::DisplayPin::Cs, VSPICS0_OUT_IDX, false, false);
+    // pinMode(HW::Display::Mosi, OUTPUT);
+    gpio_matrix_out(HW::Display::Mosi, VSPID_IN_IDX, false, false);
+
+    // pinMode(HW::Display::Cs, OUTPUT);
+    gpio_matrix_out(HW::Display::Cs, VSPICS0_OUT_IDX, false, false);
     dev.pin.val = dev.pin.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 
-    // pinMode(HW::DisplayPin::Dc, OUTPUT);
+    // pinMode(HW::Display::Dc, OUTPUT);
     GPIO_MODE_OUTPUT(10);
-    // TODO: Make it using the variable HW::DisplayPin::Dc
+    // TODO: Make it using the variable HW::Display::Dc
+#else
+    dev.misc.ck_idle_edge = 0;
+
+    // Update the HW
+    dev.cmd.update = 1;
+    while (dev.cmd.update);
+
+    // pinMode(HW::Display::Sck, OUTPUT);
+    gpio_matrix_out(HW::Display::Sck, FSPICLK_OUT_IDX, false, false);
+
+    // pinMode(HW::Display::Mosi, OUTPUT);
+    gpio_matrix_out(HW::Display::Mosi, FSPID_IN_IDX, false, false);
+
+    // pinMode(HW::Display::Cs, OUTPUT);
+    gpio_matrix_out(HW::Display::Cs, FSPICS0_OUT_IDX, false, false);
+    dev.misc.val = dev.misc.val & ~((1 << 0) & SPI_SS_MASK_ALL);
+
+    // pinMode(HW::Display::Dc, OUTPUT);
+    GPIO_MODE_OUTPUT(10);
+    // TODO: Make it using the variable HW::Display::Dc
+#endif
   }
 
   void RTC_IRAM_ATTR transfer(const void *data_in, uint32_t len) {
@@ -66,7 +80,7 @@ namespace uSpi {
     while (len) {
         c_len = (len > 64) ? 64 : len;
         c_longs = (longs > 16) ? 16 : longs;
-
+#if (HW_VERSION < 3)
         dev.mosi_dlen.usr_mosi_dbitlen = (c_len * 8) - 1;
         dev.miso_dlen.usr_miso_dbitlen = 0;
         for (size_t i = 0; i < c_longs; i++) {
@@ -74,7 +88,14 @@ namespace uSpi {
         }
         dev.cmd.usr = 1;
         while (dev.cmd.usr); // Wait till previous commands have finished
-
+#else
+        dev.ms_dlen.ms_data_bitlen = (c_len * 8) - 1;
+        for (size_t i = 0; i < c_longs; i++) {
+            dev.data_buf[i] = data[i];
+        }
+        dev.cmd.update = 1;
+        while (dev.cmd.update);
+#endif
         data += c_longs;
         longs -= c_longs;
         len -= c_len;
@@ -87,9 +108,9 @@ namespace uSpi {
 
   void RTC_IRAM_ATTR command(uint8_t value)
   {
-    GPIO_OUTPUT_SET(HW::DisplayPin::Dc, 0);
+    GPIO_OUTPUT_SET(HW::Display::Dc, 0);
     transfer(value);
-    GPIO_OUTPUT_SET(HW::DisplayPin::Dc, 1);
+    GPIO_OUTPUT_SET(HW::Display::Dc, 1);
   }
 
   void RTC_IRAM_ATTR setRamArea(uint8_t x, uint8_t y, uint8_t w, uint8_t h) {

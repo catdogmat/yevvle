@@ -3,6 +3,7 @@
 #include "display.h"
 
 struct DeepSleepState {
+#if(HW_VERSION < 3)
   // This is needed because the HW pin is not properly wired to a RTC GPIO
   struct BusyWait {
     constexpr static auto kStartWait = 25'000u; // Super low value to start with
@@ -12,6 +13,7 @@ struct DeepSleepState {
     uint32_t currentWait {kStartWait};
     uint8_t missedTimes {0};
   } busyWait[magic_enum::enum_count<DisplayMode>()];
+#endif
 
   // Display minute update variables
   uint8_t currentMinutes {0};

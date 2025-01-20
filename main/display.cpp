@@ -32,13 +32,13 @@ void Display::_startTransfer()
   if (kSingleSPI) return;
   SPI.beginTransaction(_spi_settings);
   if (!kCsHw)
-    gpio_set_level((gpio_num_t)HW::DisplayPin::Cs, LOW);
+    gpio_set_level((gpio_num_t)HW::Display::Cs, LOW);
 }
 void Display::_endTransfer()
 {
   if (kSingleSPI) return;
   if (!kCsHw)
-    gpio_set_level((gpio_num_t)HW::DisplayPin::Cs, HIGH);
+    gpio_set_level((gpio_num_t)HW::Display::Cs, HIGH);
   SPI.endTransaction();
 }
 
@@ -54,38 +54,38 @@ void Display::_transfer(const uint8_t* value, size_t size)
 
 void Display::_transferCommand(uint8_t c)
 {
-  gpio_set_level((gpio_num_t)HW::DisplayPin::Dc, LOW);
+  gpio_set_level((gpio_num_t)HW::Display::Dc, LOW);
   SPI.transfer(c);
-  gpio_set_level((gpio_num_t)HW::DisplayPin::Dc, HIGH);
+  gpio_set_level((gpio_num_t)HW::Display::Dc, HIGH);
 }
 
 Display::Display() : Adafruit_GFX(WIDTH, HEIGHT) {
   // Set pins
   if (!kCsHw)
-    pinMode(HW::DisplayPin::Cs, OUTPUT);
-  pinMode(HW::DisplayPin::Dc, OUTPUT);
-  pinMode(HW::DisplayPin::Res, OUTPUT);
-  pinMode(HW::DisplayPin::Busy, INPUT);
+    pinMode(HW::Display::Cs, OUTPUT);
+  pinMode(HW::Display::Dc, OUTPUT);
+  pinMode(HW::Display::Res, OUTPUT);
+  pinMode(HW::Display::Busy, INPUT);
 
   if (!kCsHw)
-    digitalWrite(HW::DisplayPin::Cs, kSingleSPI ? LOW : HIGH);
-  digitalWrite(HW::DisplayPin::Dc, HIGH);
-  digitalWrite(HW::DisplayPin::Res, HIGH);
+    digitalWrite(HW::Display::Cs, kSingleSPI ? LOW : HIGH);
+  digitalWrite(HW::Display::Dc, HIGH);
+  digitalWrite(HW::Display::Res, HIGH);
   
   // Reset HW / Exit Deep Sleep
-  gpio_set_level((gpio_num_t)HW::DisplayPin::Res, LOW);
-  pinMode(HW::DisplayPin::Res, OUTPUT);
+  gpio_set_level((gpio_num_t)HW::Display::Res, LOW);
+  pinMode(HW::Display::Res, OUTPUT);
   delay(1);
-  pinMode(HW::DisplayPin::Res, INPUT_PULLUP);
+  pinMode(HW::Display::Res, INPUT_PULLUP);
 
-  SPI.begin(HW::DisplayPin::Sck, -1, HW::DisplayPin::Mosi, kCsHw ? HW::DisplayPin::Cs : -1);
+  SPI.begin(HW::Display::Sck, -1, HW::Display::Mosi, kCsHw ? HW::Display::Cs : -1);
   if constexpr (kCsHw)
     SPI.setHwCs(true);
   if constexpr (kSingleSPI)
     SPI.beginTransaction(_spi_settings);
 
   // Display requires ISR service for busy pin
-  gpio_intr_disable((gpio_num_t)HW::DisplayPin::Busy);
+  gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
 
   init();
@@ -281,7 +281,7 @@ SemaphoreHandle_t sSem = NULL;
 
 void isr(void* ) {
   BaseType_t woken;
-  gpio_isr_handler_remove((gpio_num_t)HW::DisplayPin::Busy);
+  gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
   xSemaphoreGiveFromISR(sSem, &woken);
 }
 
@@ -289,24 +289,24 @@ void Display::waitWhileBusy() {
   sSem = xSemaphoreCreateBinary();
 
   static constexpr gpio_config_t io_conf = {
-    .pin_bit_mask = 1ULL << HW::DisplayPin::Busy,
+    .pin_bit_mask = 1ULL << HW::Display::Busy,
     .mode = GPIO_MODE_INPUT,
     .pull_up_en = GPIO_PULLUP_DISABLE,
     .pull_down_en = GPIO_PULLDOWN_DISABLE,
     .intr_type = GPIO_INTR_LOW_LEVEL,
   };
   gpio_config(&io_conf);
-  gpio_isr_handler_add((gpio_num_t)HW::DisplayPin::Busy, isr, (void*) 0);
+  gpio_isr_handler_add((gpio_num_t)HW::Display::Busy, isr, (void*) 0);
 
   // Set the wakeup on busy, in case tasks sleep the chip as well
-  gpio_wakeup_enable((gpio_num_t)HW::DisplayPin::Busy, GPIO_INTR_LOW_LEVEL);
+  gpio_wakeup_enable((gpio_num_t)HW::Display::Busy, GPIO_INTR_LOW_LEVEL);
   esp_sleep_enable_gpio_wakeup();
 
   if (xSemaphoreTake(sSem, 10'000 / portTICK_PERIOD_MS) != pdTRUE) {
     ESP_LOGE("displ", "semaphore expired!");
   }
-  gpio_wakeup_disable((gpio_num_t)HW::DisplayPin::Busy);
-  gpio_isr_handler_remove((gpio_num_t)HW::DisplayPin::Busy);
+  gpio_wakeup_disable((gpio_num_t)HW::Display::Busy);
+  gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
   vSemaphoreDelete(sSem);
 }
 

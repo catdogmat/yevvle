@@ -26,31 +26,42 @@ void Power::unlock() {
   }
 }
 
+// Need to store this in RTC memory since will not be available in DeepSleep
+const RTC_DATA_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
+
 void Power::set(bool high) {
   // The value changes based on the board! Old boards have the values fliped
-  if (HW::kRevision >= 2)
+  if (HW::kVoltageSelectInverted)
     high = !high;
 
   // Caches previous values
   if (kPrev == high)
     return;
 
-  // Not initialized in DeepSleep
-  // const rtc_io_desc_t& desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
-  const rtc_io_desc_t desc = {RTC_IO_TOUCH_PAD4_REG, RTC_IO_TOUCH_PAD4_MUX_SEL_M, RTC_IO_TOUCH_PAD4_FUN_SEL_S, RTC_IO_TOUCH_PAD4_FUN_IE_M, RTC_IO_TOUCH_PAD4_RUE_M, RTC_IO_TOUCH_PAD4_RDE_M, RTC_IO_TOUCH_PAD4_SLP_SEL_M, RTC_IO_TOUCH_PAD4_SLP_IE_M, 0, RTC_IO_TOUCH_PAD4_HOLD_M, RTC_CNTL_TOUCH_PAD4_HOLD_FORCE_M, RTC_IO_TOUCH_PAD4_DRV_V, RTC_IO_TOUCH_PAD4_DRV_S, RTCIO_CHANNEL_14_GPIO_NUM};
-
   // Hold disable
+#if (HW_VERSION < 3)
   REG_CLR_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_CLR_BIT(desc.reg, desc.hold);
+#else
+  CLEAR_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, desc.hold_force);
+#endif
   // Deep sleep hold disable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
 
+#if (HW_VERSION < 3)
   GPIO_MODE_OUTPUT(13);
+#else
+  // GPIO_MODE_OUTPUT(13);
+#endif
   GPIO_OUTPUT_SET(HW::kVoltageSelectPin, high);
 
   // Hold enable
+#if (HW_VERSION < 3)
   REG_SET_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_SET_BIT(desc.reg, desc.hold);
+#else
+  SET_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, desc.hold_force);
+#endif
 
   // Deep sleep hold enable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_UNHOLD);

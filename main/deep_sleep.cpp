@@ -31,15 +31,20 @@
 RTC_DATA_ATTR DeepSleepState kDSState;
 
 void RTC_IRAM_ATTR turnOffGpio() {
-  using namespace HW::DisplayPin;
-  for (auto& pin : std::array{Cs, Dc, Res, Busy, Mosi, Sck}) {
+  using D = HW::Display;
+  for (auto& pin : std::array{D::Cs, D::Dc, D::Res, D::Mosi, D::Sck}) {
     GPIO_DIS_OUTPUT(pin);
   }
+  GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
 }
 
 void RTC_IRAM_ATTR feed_wdt() {
   // More than 500ms it is better to reset the MWDT0
+#if(HW_VERSION < 3)
   TIMERG0.wdtwprotect.wdt_wkey = TIMG_WDT_WKEY_VALUE;
+#else
+  TIMERG0.wdtwprotect.wdt_wkey = TIMG_WDT_WKEY_V;
+#endif
   TIMERG0.wdtfeed.wdt_feed = 1;
   TIMERG0.wdtwprotect.wdt_wkey = 0;
 }
@@ -60,9 +65,12 @@ void RTC_IRAM_ATTR microSleep(uint32_t micros) {
 void RTC_IRAM_ATTR wake_stub_example(void)
 {
   // This sets up the delay to work properly
-  ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
-
+#if(HW_VERSION < 3)
   auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
+  ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
+#else
+  ets_update_cpu_frequency(ets_get_xtal_freq() / 1'000'000);
+#endif  
 
   // If we were waiting for a display finish, we need to complete it first
   if (kDSState.displayBusy) {
@@ -73,8 +81,9 @@ void RTC_IRAM_ATTR wake_stub_example(void)
 
     uSpi::init();
 
-    // Wait until display busy goes off (this will not be needed in next HW version)
-    GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::DisplayPin::Busy
+#if(HW_VERSION < 3)
+    // Wait until display busy goes off (this will not be needed in next HW version
+    GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
     while(GPIO_INPUT_GET(19) != 0) {
       microSleep(busyWait.kWaitStep);
       busyWait.currentWait += busyWait.kWaitStep;
@@ -83,6 +92,9 @@ void RTC_IRAM_ATTR wake_stub_example(void)
     busyWait.missedTimes = std::min(busyWait.missedTimes, uint8_t(16));
     uint32_t reduceAmount = busyWait.kReduce << ++busyWait.missedTimes;
     busyWait.currentWait -= std::min(busyWait.currentWait / 2, reduceAmount);
+#else
+    gpio_pin_wakeup_disable();
+#endif
 
     if (kDSState.redrawDec) {
       kDSState.redrawDec = false;
@@ -98,7 +110,12 @@ void RTC_IRAM_ATTR wake_stub_example(void)
     kDSState.currentMinutes += kDSState.stepSize;
     kDSState.minutes -= kDSState.stepSize;
     auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
-    esp_wake_stub_set_wakeup_time(minutes * 60'000'000 - busyWait.currentWait);
+    esp_wake_stub_set_wakeup_time(
+      minutes * 60'000'000
+#if(HW_VERSION < 3)
+      - busyWait.currentWait
+#endif
+      );
 
     // Set stub entry, then going to deep sleep again.
     esp_wake_stub_sleep(&wake_stub_example);
@@ -138,10 +155,10 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   Light::off();
 
   // Reset display to wake it up
-  GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::DisplayPin::Res
-  GPIO_OUTPUT_SET(HW::DisplayPin::Res, 0);
+  GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::Display::Res
+  GPIO_OUTPUT_SET(HW::Display::Res, 0);
   esp_rom_delay_us(1'000);
-  GPIO_OUTPUT_SET(HW::DisplayPin::Res, 1);
+  GPIO_OUTPUT_SET(HW::Display::Res, 1);
 
   // Turn on high power mode since it makes display use less power (not sure why)
   // It will take around 125us * 0.1V, for 1.5V = 1.6ms
@@ -172,8 +189,15 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   turnOffGpio();
   kDSState.displayBusy = true;
 
+#if(HW_VERSION < 3)
   // Set wakeup timer when we guess display will finish refreshing, to put display to hibernation
   esp_wake_stub_set_wakeup_time(busyWait.currentWait);
+#else
+  // Set the wakeup on busy of the display
+  gpio_pin_wakeup_enable(HW::Display::Busy, GPIO_PIN_INTR_LOLEVEL);
+  // gpio_wakeup_enable((gpio_num_t)HW::Display::Busy, GPIO_INTR_LOW_LEVEL);
+  esp_sleep_enable_gpio_wakeup();
+#endif
 
   // Set stub entry, then going to deep sleep again.
   esp_wake_stub_sleep(&wake_stub_example);
