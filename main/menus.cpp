@@ -58,6 +58,8 @@ UI::Any Core::createMainMenu() {
       //     []() -> int { return kSettings.mWatchface.mType; },
       //     [](){ kSettings.mWatchface.mType = (kSettings.mWatchface.mType + 1) % 4; }
       // },
+      UI::Bool{"DEBUG MODE", kSettings.mWatchface.mDebug},
+
       UI::Bool{"Show Battery %", kSettings.mWatchface.mConfig.mBattery},
       UI::Bool{"Moon Phases", kSettings.mWatchface.mConfig.mMoon},
       UI::Bool{"Sunset/Sunrise", kSettings.mWatchface.mConfig.mSun},

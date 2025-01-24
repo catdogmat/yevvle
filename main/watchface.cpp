@@ -81,12 +81,14 @@ void Watchface::draw() {
   // ESP_LOGE("comp", "%d", composables.size());
 
   // DEBUG
-  // for (auto& c : composables)
-  //   mDisplay.drawRect(c.x, c.y, c.w, c.h, 1);
-  // auto ru = rectU();
-  // auto rd = rectD();
-  // mDisplay.drawRect(ru.x, ru.y, ru.w, ru.h, 1);
-  // mDisplay.drawRect(rd.x, rd.y, rd.w, rd.h, 1);
+  if (mSettings.mWatchface.mDebug) {
+    for (auto& c : composables)
+      mDisplay.drawRect(c.x, c.y, c.w, c.h, 1);
+    auto ru = rectU();
+    auto rd = rectD();
+    mDisplay.drawRect(ru.x, ru.y, ru.w, ru.h, 1);
+    mDisplay.drawRect(rd.x, rd.y, rd.w, rd.h, 1);
+  }
 
   // Convert to aligned rotated coords, makes easier the copy
   for (auto& c : composables)

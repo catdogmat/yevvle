@@ -80,13 +80,15 @@ std::vector<Rect> DefaultWatchface::render() {
       auto frac = getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec);
       drawMoon(frac, 50, 150, 30, !color, color);
       // ESP_LOGE("frac", "%f", frac);
+      constexpr auto center = std::pair{50, 150};
+      constexpr auto radius = 30;
 
-      mDisplay.drawCircle(50, 150, 30, 1);
+      mDisplay.drawCircle(center.first, center.second, 30, 1);
       mDisplay.setFont(NULL);
       mDisplay.setCursor(40, 185);
       mDisplay.printf("%.2f", frac);
 
-      rects.emplace_back(15, 115, 85, 85);
+      rects.emplace_back(center.first - radius, center.second - radius, (radius + 1) * 2, radius * 2 + 15);
     }
     // Sun
     if (config.mSun) {
@@ -109,7 +111,7 @@ std::vector<Rect> DefaultWatchface::render() {
       if (perc > 0 && perc < 1)
         mDisplay.fillCircle(145 - 35 * cos(perc * PI), 170 - 35 * sin(perc * PI), 5, 1);
 
-      rects.emplace_back(120, 120, 80, 80);
+      rects.emplace_back(100, 120, 95, 70);
     }
   }
 

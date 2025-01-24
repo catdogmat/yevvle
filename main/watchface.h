@@ -8,6 +8,7 @@
 
 struct WatchfaceSettings {
     uint8_t mType : 2 {0}; // Watchface type selected from the presets
+    bool mDebug {false};
 
     // Draw cache, try to only draw once the hour
     // Also can be used to SPI transfer form deep_sleep wake stub
