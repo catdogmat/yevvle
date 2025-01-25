@@ -51,7 +51,7 @@ void Power::set(bool high) {
 #if (HW_VERSION < 3)
   GPIO_MODE_OUTPUT(13);
 #else
-  // GPIO_MODE_OUTPUT(13);
+  GPIO_MODE_OUTPUT(13);
 #endif
   GPIO_OUTPUT_SET(HW::kVoltageSelectPin, high);
 

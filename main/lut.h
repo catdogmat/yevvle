@@ -113,19 +113,63 @@ constexpr auto SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH_KEEP = []{
   return ref;
 }();
 
-constexpr auto SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP = LUT{
+
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM(uint8_t change, uint8_t sustain) {
+  return LUT{
+    .group {
+      {
+        .phase = {
+          {.bb = O, .bw = W, .wb = B, .ww = O, .time = change},
+          {.bb = B, .bw = W, .wb = B, .ww = W, .time = sustain},
+        },
+        .fr = 2,
+      }
+    },
+    .eopt {0x07}, // "keep previous output before power off"
+    .vgh {0x17}, // Max 20V
+    .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
+    .vcom {0x20}, // VCOM 0x20 best
+  };
+};
+
+// Update all pixels, perfect image quality, but at what cost?
+// The display ends up burning, and uses only slightly lower power
+// than the other LUT
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_10_0 = SSD1681_LIGHTMYINK_CUSTOM(10, 0);
+
+// Update the pixels that don´t change a minimal amount (25ms)
+// The ones that change update them longer (50ms/150ms)
+// Gives good quality, persistance, and low power
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_6_1 = SSD1681_LIGHTMYINK_CUSTOM(2, 1);
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_8_1 = SSD1681_LIGHTMYINK_CUSTOM(6, 1);
+
+
+// A LUT to repair the burnt display? But it doesn´t...
+constexpr auto SSD1681_LIGHTMYINK_REPAIR = LUT{
   .group {
-    {
-      .phase = {{.bb = B, .bw = W, .wb = B, .ww = W, .time = 0x0A}},
-      .fr = 2,
+#define PHASE(X) \
+    { \
+      .phase = { \
+        {.bb = W, .bw = W, .wb = W, .ww = W, .time = X}, \
+        {.bb = B, .bw = B, .wb = B, .ww = B, .time = X}, \
+        {.bb = W, .bw = W, .wb = W, .ww = W, .time = X}, \
+        {.bb = B, .bw = B, .wb = B, .ww = B, .time = X}, \
+        }, \
+      .rp = 64 / X, \
+      .fr = 2, \
     }
+  PHASE(16),
+  PHASE(8),
+  PHASE(4),
+  PHASE(2),
+  PHASE(1),
   },
   .eopt {0x07}, // "keep previous output before power off"
   .vgh {0x17}, // Max 20V
-  .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
+  // .vsh1_vsh2_vsl {{0x41, 0x0, 0x32}}, //15/0/-15
+  .vsh1_vsh2_vsl {{0x4B, 0x0, 0x3A}}, //17/0/-17
   .vcom {0x20}, // VCOM 0x20 best
 };
-
 
 constexpr auto testLut = LUT{
   .group {

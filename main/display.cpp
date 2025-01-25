@@ -8,8 +8,10 @@
 // Fully rewriten for this project
 
 #include "display.h"
+#include "power.h"
 #include "hardware.h"
 #include "driver/gpio.h"
+#include "driver/rtc_io.h"
 
 // The display will remember the config and RAM between runs
 // we can remember them and avoid expensive SPI calls
@@ -27,16 +29,21 @@ int RTC_IRAM_ATTR getSetDisplayMode() { return kState.mode; };
 
 const SPISettings Display::_spi_settings{kOverdriveSPI ? 26'666'666 : 20'000'000, MSBFIRST, SPI_MODE0};
 
+SemaphoreHandle_t sSem = NULL;
+void isr(void* ) {
+  BaseType_t woken;
+  gpio_intr_disable((gpio_num_t)HW::Display::Busy);
+  xSemaphoreGiveFromISR(sSem, &woken);
+}
+
 void Display::_startTransfer()
 {
-  if (kSingleSPI) return;
   SPI.beginTransaction(_spi_settings);
   if (!kCsHw)
     gpio_set_level((gpio_num_t)HW::Display::Cs, LOW);
 }
 void Display::_endTransfer()
 {
-  if (kSingleSPI) return;
   if (!kCsHw)
     gpio_set_level((gpio_num_t)HW::Display::Cs, HIGH);
   SPI.endTransaction();
@@ -68,25 +75,28 @@ Display::Display() : Adafruit_GFX(WIDTH, HEIGHT) {
   pinMode(HW::Display::Busy, INPUT);
 
   if (!kCsHw)
-    digitalWrite(HW::Display::Cs, kSingleSPI ? LOW : HIGH);
+    digitalWrite(HW::Display::Cs, HIGH);
   digitalWrite(HW::Display::Dc, HIGH);
   digitalWrite(HW::Display::Res, HIGH);
   
   // Reset HW / Exit Deep Sleep
+  if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Display::Res))
+    rtc_gpio_hold_dis((gpio_num_t)HW::Display::Res);
   gpio_set_level((gpio_num_t)HW::Display::Res, LOW);
-  pinMode(HW::Display::Res, OUTPUT);
   delay(1);
-  pinMode(HW::Display::Res, INPUT_PULLUP);
+  gpio_set_level((gpio_num_t)HW::Display::Res, HIGH); // THE HAT BOARD NEEDS output high
+  //pinMode(HW::Display::Res, INPUT_PULLUP);
+  if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Display::Res))
+    rtc_gpio_hold_en((gpio_num_t)HW::Display::Res);
 
   SPI.begin(HW::Display::Sck, -1, HW::Display::Mosi, kCsHw ? HW::Display::Cs : -1);
   if constexpr (kCsHw)
     SPI.setHwCs(true);
-  if constexpr (kSingleSPI)
-    SPI.beginTransaction(_spi_settings);
 
   // Display requires ISR service for busy pin
   gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
+  gpio_isr_handler_add((gpio_num_t)HW::Display::Busy, isr, (void*) 0);
 
   init();
 }
@@ -128,7 +138,7 @@ void Display::init() {
 
   // setRamAdressMode
   _transferCommand(0x11); // set ram entry mode
-  _transfer(0b11);  //  0bYX adress mode (+1/-0), Default 0b11
+  _transfer(0b11);        //  0bYX adress mode (+1/-0), Default 0b11
 
   // Set initial refresh mode, will not change until first refresh
   _setRefreshMode(FULL);
@@ -139,10 +149,12 @@ void Display::init() {
 
 void Display::_setCustomLut(const DisplayMode& mode) {
   auto& lut = [&] -> const LUT& {
-    if (mode == CUSTOM) {
-      return SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP;
-    }
-    return SSD1681_LIGHTMYINK_FAST_REFRESH_KEEP;
+    if (mode == GOOD)
+      return SSD1681_LIGHTMYINK_CUSTOM_8_1;
+    if (mode == QUICK)
+      return SSD1681_LIGHTMYINK_CUSTOM_6_1;
+
+    return SSD1681_LIGHTMYINK_CUSTOM_8_1;
     // Other possible LUTS to use
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH;
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH;
@@ -254,11 +266,13 @@ void Display::refresh()
     // Draw the backbuffer as well on first refresh
     writeAll(true);
   }
+  Power::lock();
   _startTransfer();
   _transferCommand(0x20);
   _endTransfer();
 
   waitWhileBusy();
+  Power::unlock();
 
   if (!kState.firstRefreshDone) {
     _startTransfer();
@@ -277,26 +291,18 @@ void Display::refresh()
   }
 }
 
-SemaphoreHandle_t sSem = NULL;
-
-void isr(void* ) {
-  BaseType_t woken;
-  gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
-  xSemaphoreGiveFromISR(sSem, &woken);
-}
-
 void Display::waitWhileBusy() {
   sSem = xSemaphoreCreateBinary();
 
-  static constexpr gpio_config_t io_conf = {
+  static constexpr gpio_config_t busy_conf = {
     .pin_bit_mask = 1ULL << HW::Display::Busy,
     .mode = GPIO_MODE_INPUT,
     .pull_up_en = GPIO_PULLUP_DISABLE,
     .pull_down_en = GPIO_PULLDOWN_DISABLE,
     .intr_type = GPIO_INTR_LOW_LEVEL,
   };
-  gpio_config(&io_conf);
-  gpio_isr_handler_add((gpio_num_t)HW::Display::Busy, isr, (void*) 0);
+  gpio_config(&busy_conf);
+  // Setting the GPIO config reenables the interrupt
 
   // Set the wakeup on busy, in case tasks sleep the chip as well
   gpio_wakeup_enable((gpio_num_t)HW::Display::Busy, GPIO_INTR_LOW_LEVEL);
@@ -305,8 +311,10 @@ void Display::waitWhileBusy() {
   if (xSemaphoreTake(sSem, 10'000 / portTICK_PERIOD_MS) != pdTRUE) {
     ESP_LOGE("displ", "semaphore expired!");
   }
+
+  gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_wakeup_disable((gpio_num_t)HW::Display::Busy);
-  gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
+
   vSemaphoreDelete(sSem);
 }
 
@@ -426,8 +434,6 @@ void Display::hibernate()
   // _transfer(0b11); // mode 2 (no RAM reading allowed) // Doesn't work... why?
   // _transfer(0b10); // mode 2 as well?
   _endTransfer();
-  if (kSingleSPI)
-    SPI.beginTransaction(_spi_settings);
 }
 
 Rect Display::getTextRect(const char * str, int16_t xc, int16_t yc) {

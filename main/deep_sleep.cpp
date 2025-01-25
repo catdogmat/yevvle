@@ -35,7 +35,11 @@ void RTC_IRAM_ATTR turnOffGpio() {
   for (auto& pin : std::array{D::Cs, D::Dc, D::Res, D::Mosi, D::Sck}) {
     GPIO_DIS_OUTPUT(pin);
   }
+#if (HW_VERSION < 3)
   GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
+#else
+  GPIO_MODE_INPUT(7); // TODO: Make it using the variable HW::Display::Busy
+#endif
 }
 
 void RTC_IRAM_ATTR feed_wdt() {
@@ -48,6 +52,10 @@ void RTC_IRAM_ATTR feed_wdt() {
   TIMERG0.wdtfeed.wdt_feed = 1;
   TIMERG0.wdtwprotect.wdt_wkey = 0;
 }
+
+#if (HW_VERSION >= 3)
+const RTC_DATA_ATTR rtc_io_desc_t descRes = rtc_io_desc[rtc_io_num_map[HW::Display::Res]];
+#endif
 
 void RTC_IRAM_ATTR microSleep(uint32_t micros) {
   constexpr auto step = 400'000;
@@ -70,7 +78,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
 #else
   ets_update_cpu_frequency(ets_get_xtal_freq() / 1'000'000);
-#endif  
+#endif
 
   // If we were waiting for a display finish, we need to complete it first
   if (kDSState.displayBusy) {
@@ -155,10 +163,19 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   Light::off();
 
   // Reset display to wake it up
+#if (HW_VERSION < 3)
   GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::Display::Res
+#else
+  CLEAR_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
+  GPIO_MODE_OUTPUT(6); // TODO: Make it using the variable HW::Display::Res
+#endif
   GPIO_OUTPUT_SET(HW::Display::Res, 0);
-  esp_rom_delay_us(1'000);
+  esp_rom_delay_us(1'000); // HW 3 suspiciusly is 2X this time
+  // microSleep(300'000);
   GPIO_OUTPUT_SET(HW::Display::Res, 1);
+#if (HW_VERSION >= 3)
+  SET_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
+#endif
 
   // Turn on high power mode since it makes display use less power (not sure why)
   // It will take around 125us * 0.1V, for 1.5V = 1.6ms
@@ -189,14 +206,12 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   turnOffGpio();
   kDSState.displayBusy = true;
 
-#if(HW_VERSION < 3)
+#if (HW_VERSION < 3)
   // Set wakeup timer when we guess display will finish refreshing, to put display to hibernation
   esp_wake_stub_set_wakeup_time(busyWait.currentWait);
 #else
   // Set the wakeup on busy of the display
   gpio_pin_wakeup_enable(HW::Display::Busy, GPIO_PIN_INTR_LOLEVEL);
-  // gpio_wakeup_enable((gpio_num_t)HW::Display::Busy, GPIO_INTR_LOW_LEVEL);
-  esp_sleep_enable_gpio_wakeup();
 #endif
 
   // Set stub entry, then going to deep sleep again.

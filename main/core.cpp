@@ -12,20 +12,63 @@
 
 #include "watchface_default.h"
 
+#include "driver/gpio.h"
+#include "driver/rtc_io.h"
+
 RTC_DATA_ATTR Settings kSettings;
 
-// This is required since we initialize the Adafruit EPD with our EPD
 Core::Core()
-: mDisplay{}
-, mTime{kSettings.mTime}
+: mTime{kSettings.mTime}
+, mFirstTimeBoot{[&]{
+    static RTC_DATA_ATTR bool sDone = false;
+    if (sDone)
+        return false;
+    sDone = true;
+
+#if HW_VERSION < 3
+    // Set all GPIOs to input that we are not using to avoid leaking power
+    // This is NEEDED
+    const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
+    for (int i = 0; i < GPIO_NUM_MAX; i++) {
+        if ((ignore >> i) & 0b1)
+            continue;
+        // ESP_LOGE("", "%d input", i);
+        pinMode(i, INPUT);
+    }
+#else
+    // // Set all GPIOs to input that we are not using to avoid leaking power
+    // // This is NEEDED
+    // const uint64_t ignore = 0b111111111110000000000000000000010001; // Ignore some GPIOs due to resets
+    // for (int i = 0; i < GPIO_NUM_MAX; i++) {
+    //     if ((ignore >> i) & 0b1)
+    //         continue;
+    //     // ESP_LOGE("", "%d input", i);
+    //     pinMode(i, INPUT);
+    // }
+#endif
+
+    // Recover Settings from Disk // TODO
+    // load NVS and load settings
+    // For some reason, seems to be enabled on first boot
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    // Select default voltage 2.6V
+    Power::low();
+    Light::off();
+    // HACK: Set a fixed time to start with
+    struct timeval tv{.tv_sec=1723194200, .tv_usec=0};
+    // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
+    mTime.setTime(tv);
+    // reset calibration to the ESP32
+    mTime.calReset();
+
+    return true;
+}()}
+, mDisplay{}
 , mBattery{kSettings.mBattery}
 , mTouch{kSettings.mTouch}
 , mNow{mTime.getElements()}
 , mUi{createMainMenu()}
 {
-}
-
-void Core::boot() {
     // ESP_LOGE("", "boot %lu", micros());
 
     // Wake up reason affects how to proceed
@@ -45,7 +88,6 @@ void Core::boot() {
         break;
     default: // Lets assume first time boot ?
         // ESP_LOGE("ev", "%d", (int)wakeup_reason);
-        firstTimeBoot();
         break;
     }
 
@@ -105,6 +147,17 @@ void Core::boot() {
             }
         }, findUi());
     }
+    
+    // bool inverted = false;
+    // while (true) {
+    //     mDisplay.setInverted(inverted = !inverted);
+    //     mDisplay.writeAllAndRefresh();
+    //     if (mTouch.readAndClear() != Touch::Btn::NONE)
+    //     break;
+    // }
+
+    // mDisplay.invertDisplay(true);
+    // mDisplay.refresh();
 
     // Finish display, setup touch and finish pending tasks
     mDisplay.hibernate();
@@ -112,6 +165,11 @@ void Core::boot() {
     mTasks.clear();
     mTouch.clear(); // Clear it again in case the tasks took too long
 
+    
+    // rtc_gpio_pullup_en((gpio_num_t)HW::Display::Res);
+    // rtc_gpio_hold_en((gpio_num_t)HW::Display::Res);
+
+    // gpio_dump_io_configuration(stdout, (15ULL << 4) | (3ULL << 19));
     // ESP_LOGE("deepSleep", "%ld", micros());
 
     // Calculate stepsize based on battery level or on battery save mode
@@ -158,35 +216,6 @@ void Core::boot() {
     ESP_LOGE("deepSleep", "never reach!");
 }
 
-void Core::firstTimeBoot() {
-    // Recover Settings from Disk // TODO
-    // load NVS and load settings
-    // For some reason, seems to be enabled on first boot
-    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
-    // Select default voltage 2.6V
-    Power::low();
-    Light::off();
-    // HACK: Set a fixed time to start with
-    struct timeval tv{.tv_sec=1723194200, .tv_usec=0};
-    // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
-    mTime.setTime(tv);
-    // reset calibration to the ESP32
-    mTime.calReset();
-
-    // Set oscilator config PCF8563
-    // TODO ?
-
-    // Can take 1ms to run this code // NEEDED TEST?
-    // Set all GPIOs to input that we are not using to avoid leaking power
-    // Set GPIOs 0-39 to input to avoid power leaking out
-    // const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
-    // for (int i = 0; i < GPIO_NUM_MAX; i++) {
-    //     if ((ignore >> i) & 0b1)
-    //         continue;
-    //     // ESP_LOGE("", "%d input", i);
-    //     pinMode(i, INPUT);
-    // }
-}
 const UI::Any& Core::findUi() {
     // Find current UI element in view by recursively finding deeper elements
     const UI::Any* item = &mUi;

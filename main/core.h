@@ -16,21 +16,18 @@
  */
 class Core {
 public:
-    void boot(); // Called when ESP32 starts up
-
     Core();
 
 private:
-    void firstTimeBoot();
-
     void handleTouch();
     const UI::Any& findUi();
     UI::Any createMainMenu();
 
     void NTPSync();
 
-    Display mDisplay;
     Time mTime;
+    const bool mFirstTimeBoot;
+    Display mDisplay;
     Battery mBattery;
     Touch mTouch;
 

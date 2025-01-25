@@ -18,7 +18,8 @@
 enum DisplayMode {
   FULL,
   FAST,
-  CUSTOM,
+  GOOD,  // 6_1
+  QUICK, // 2_1
 };
 
 struct DisplaySettings {
@@ -27,7 +28,7 @@ struct DisplaySettings {
   bool mDarkBorder {false};
   uint8_t mRotation {2};
   DisplayMode mMenuLut {FAST};
-  DisplayMode mWatchLut {CUSTOM};
+  DisplayMode mWatchLut {GOOD};
 };
 
 extern int getSetDisplayMode();
@@ -41,7 +42,6 @@ class Display : public Adafruit_GFX {
 public:
   static constexpr bool kReduceBoosterTime = true; // Saves ~200ms + Reduce power usage
   static constexpr bool kFastUpdateTemp = true; // Saves 5ms + FixedSpeedier LUT (300ms update)
-  static constexpr bool kSingleSPI = false; // Assumes only display uses SPI
   static constexpr bool kCsHw = true; // Gives the SPI driver the Cs control
   static constexpr bool kOverdriveSPI = false; // Uses a 25% faster SPI out of spec
 

@@ -8,6 +8,10 @@
 #include "settings.h"
 #include "deep_sleep_utils.h"
 
+#include "hal/clk_gate_ll.h"
+
+#include "hal/gpio_ll.h"
+
 namespace uSpi {
   constexpr auto clockDiv = 266241; // or even 8193 for 26MHz SPI !
 
@@ -30,16 +34,9 @@ namespace uSpi {
     dev.ctrl.wr_bit_order = 0; //MSBFIRST
     dev.ctrl.rd_bit_order = 0;
 
-#if(HW_VERSION < 3)
-    dev.pin.ck_idle_edge = 0;
-
-    // pinMode(HW::Display::Sck, OUTPUT);
+#if (HW_VERSION < 3)
     gpio_matrix_out(HW::Display::Sck, VSPICLK_OUT_IDX, false, false);
-
-    // pinMode(HW::Display::Mosi, OUTPUT);
     gpio_matrix_out(HW::Display::Mosi, VSPID_IN_IDX, false, false);
-
-    // pinMode(HW::Display::Cs, OUTPUT);
     gpio_matrix_out(HW::Display::Cs, VSPICS0_OUT_IDX, false, false);
     dev.pin.val = dev.pin.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 
@@ -47,24 +44,31 @@ namespace uSpi {
     GPIO_MODE_OUTPUT(10);
     // TODO: Make it using the variable HW::Display::Dc
 #else
-    dev.misc.ck_idle_edge = 0;
+    dev.clk_gate.clk_en = 1;
+    dev.clk_gate.mst_clk_sel = 1;
+    dev.clk_gate.mst_clk_active = 1;
+    dev.dma_conf.rx_afifo_rst = 1;
+    dev.dma_conf.buf_afifo_rst = 1;
+    dev.dma_conf.tx_seg_trans_clr_en = 1;
+    dev.dma_conf.rx_seg_trans_clr_en = 1;
+
+    // These pins need to be set as GPIO before can be used in the matrix
+    if constexpr (HW::Display::Sck == 19 || HW::Display::Mosi == 19 || HW::Display::Cs == 19)
+      gpio_ll_iomux_func_sel(IO_MUX_GPIO19_REG, PIN_FUNC_GPIO);
+    if constexpr (HW::Display::Sck == 20 || HW::Display::Mosi == 20 || HW::Display::Cs == 20)
+      gpio_ll_iomux_func_sel(IO_MUX_GPIO20_REG, PIN_FUNC_GPIO);
+
+    gpio_matrix_out(HW::Display::Sck, SPI3_CLK_OUT_IDX, false, false);
+    gpio_matrix_out(HW::Display::Mosi, SPI3_D_IN_IDX, false, false);
+    gpio_matrix_out(HW::Display::Cs, SPI3_CS0_OUT_IDX, false, false);
+    dev.misc.val = dev.misc.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 
     // Update the HW
     dev.cmd.update = 1;
     while (dev.cmd.update);
 
-    // pinMode(HW::Display::Sck, OUTPUT);
-    gpio_matrix_out(HW::Display::Sck, FSPICLK_OUT_IDX, false, false);
-
-    // pinMode(HW::Display::Mosi, OUTPUT);
-    gpio_matrix_out(HW::Display::Mosi, FSPID_IN_IDX, false, false);
-
-    // pinMode(HW::Display::Cs, OUTPUT);
-    gpio_matrix_out(HW::Display::Cs, FSPICS0_OUT_IDX, false, false);
-    dev.misc.val = dev.misc.val & ~((1 << 0) & SPI_SS_MASK_ALL);
-
     // pinMode(HW::Display::Dc, OUTPUT);
-    GPIO_MODE_OUTPUT(10);
+    GPIO_MODE_OUTPUT(5);
     // TODO: Make it using the variable HW::Display::Dc
 #endif
   }
@@ -83,19 +87,19 @@ namespace uSpi {
 #if (HW_VERSION < 3)
         dev.mosi_dlen.usr_mosi_dbitlen = (c_len * 8) - 1;
         dev.miso_dlen.usr_miso_dbitlen = 0;
-        for (size_t i = 0; i < c_longs; i++) {
-            dev.data_buf[i] = data[i];
-        }
-        dev.cmd.usr = 1;
-        while (dev.cmd.usr); // Wait till previous commands have finished
 #else
         dev.ms_dlen.ms_data_bitlen = (c_len * 8) - 1;
+#endif
         for (size_t i = 0; i < c_longs; i++) {
             dev.data_buf[i] = data[i];
         }
+#if (HW_VERSION >= 3)
         dev.cmd.update = 1;
         while (dev.cmd.update);
 #endif
+        dev.cmd.usr = 1;
+        while (dev.cmd.usr); // Wait till previous commands have finished
+
         data += c_longs;
         longs -= c_longs;
         len -= c_len;

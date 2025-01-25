@@ -111,9 +111,9 @@ UI::Any Core::createMainMenu() {
         }));
       }},
       UI::Action{"BLE Test", [&]{
-        extern void ble_main(void);
+        // extern void ble_main(void);
         mTasks.emplace_back(std::async(std::launch::async, []{
-          ble_main();
+          // ble_main();
           delay(50'000);
         }));
       }},

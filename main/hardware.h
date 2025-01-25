@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <array>
+#include <sdkconfig.h>
 
 #if CONFIG_IDF_TARGET_ESP32S3
 #define HW_VERSION 3 // First WIP board
@@ -51,10 +52,36 @@ struct HW_2 : public HW_1 {
 };
 
 // New board based on ESP32-S3-FN8
-struct HW_3 : public HW_2 {
+struct HW_3 {
     constexpr static uint8_t kVersion = 3;
 
     constexpr static HW_chips kChipType = HW_chips::ESP_32_S3;
+
+    struct Touch {
+        constexpr static std::array<uint8_t, 4> Pin = {{8,8,8,8}};
+        // Layout of pads are TR=0, TL=2, BL=5, BR=6
+        // Default map to DOWN=BR=6, UP=TR=0, MENU=TL=2, BACK=BL=5
+        enum PadNames {BotR, TopR, TopL, BotL};
+        constexpr static std::array<uint8_t, 4> Pad = {{0,0,0,0}};
+    };
+
+    struct Display {
+        constexpr static uint8_t Cs = 4;
+        constexpr static uint8_t Res = 6;
+        constexpr static uint8_t Dc = 5;
+        constexpr static uint8_t Sck = 19; //36;
+        constexpr static uint8_t Busy = 7;
+        constexpr static uint8_t Mosi = 20; //35;
+    };
+
+    constexpr static uint8_t kAdcPin = 21;
+    constexpr static uint8_t kRtcIntPin = 21;
+    constexpr static uint8_t kLightPin = 21;
+    constexpr static uint8_t kSpeakerPin = 21;
+    constexpr static uint8_t kVibratorPin = 21;
+    constexpr static uint8_t kVoltageSelectPin = 21;
+
+    constexpr static bool kVoltageSelectInverted = false;
 };
 
 #define CONCAT(a, b) a##b

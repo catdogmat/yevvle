@@ -34,7 +34,7 @@ set(srcs
 
     deep_sleep.cpp
 
-    ble.cpp
+    # ble.cpp
 )
 
 set(CMAKE_CXX_STANDARD 23)

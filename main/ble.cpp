@@ -58,16 +58,19 @@ static int
 gatt_svr_chr_access_device_info(uint16_t conn_handle, uint16_t attr_handle,
                                 struct ble_gatt_access_ctxt *ctxt, void *arg);
 
+static const auto uuid_hrs_measurement = BLE_UUID16_DECLARE(GATT_HRS_MEASUREMENT_UUID);
+static const auto uuid_hrs_loc = BLE_UUID16_DECLARE(GATT_HRS_BODY_SENSOR_LOC_UUID);
+
 static const ble_gatt_chr_def hrs_chr_def[] = {
     {
         /* Characteristic: Heart-rate measurement */
-        .uuid = BLE_UUID16_DECLARE(GATT_HRS_MEASUREMENT_UUID),
+        .uuid = uuid_hrs_measurement,
         .access_cb = gatt_svr_chr_access_heart_rate,
         .flags = BLE_GATT_CHR_F_NOTIFY,
         .val_handle = &hrs_hrm_handle,
     }, {
         /* Characteristic: Body sensor location */
-        .uuid = BLE_UUID16_DECLARE(GATT_HRS_BODY_SENSOR_LOC_UUID),
+        .uuid = uuid_hrs_loc,
         .access_cb = gatt_svr_chr_access_heart_rate,
         .flags = BLE_GATT_CHR_F_READ,
     }, {

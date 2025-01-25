@@ -17,6 +17,6 @@ void app_main(void) {
     };
     esp_pm_configure(&pm_config);
 
-    getInstance().boot();
+    getInstance();
 }
 }
