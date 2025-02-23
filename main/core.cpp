@@ -25,7 +25,7 @@ Core::Core()
         return false;
     sDone = true;
 
-#if HW_VERSION < 3
+#if HW_VERSION < 10
     // Set all GPIOs to input that we are not using to avoid leaking power
     // This is NEEDED
     const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
@@ -69,10 +69,10 @@ Core::Core()
 , mNow{mTime.getElements()}
 , mUi{createMainMenu()}
 {
-    // ESP_LOGE("", "boot %lu", micros());
-
     // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
+    // esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+    ESP_LOGE("", "boot %lu reason %d", micros(), wakeup_reason);
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
         handleTouch();

@@ -34,7 +34,7 @@ namespace uSpi {
     dev.ctrl.wr_bit_order = 0; //MSBFIRST
     dev.ctrl.rd_bit_order = 0;
 
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
     gpio_matrix_out(HW::Display::Sck, VSPICLK_OUT_IDX, false, false);
     gpio_matrix_out(HW::Display::Mosi, VSPID_IN_IDX, false, false);
     gpio_matrix_out(HW::Display::Cs, VSPICS0_OUT_IDX, false, false);
@@ -84,7 +84,7 @@ namespace uSpi {
     while (len) {
         c_len = (len > 64) ? 64 : len;
         c_longs = (longs > 16) ? 16 : longs;
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
         dev.mosi_dlen.usr_mosi_dbitlen = (c_len * 8) - 1;
         dev.miso_dlen.usr_miso_dbitlen = 0;
 #else
@@ -93,7 +93,7 @@ namespace uSpi {
         for (size_t i = 0; i < c_longs; i++) {
             dev.data_buf[i] = data[i];
         }
-#if (HW_VERSION >= 3)
+#if (HW_VERSION >= 10)
         dev.cmd.update = 1;
         while (dev.cmd.update);
 #endif

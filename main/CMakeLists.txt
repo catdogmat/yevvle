@@ -34,7 +34,10 @@ set(srcs
 
     deep_sleep.cpp
 
+    # WIP stuff
     # ble.cpp
+    gps.cpp
+    # lora.cpp
 )
 
 set(CMAKE_CXX_STANDARD 23)

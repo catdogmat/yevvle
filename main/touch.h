@@ -26,6 +26,7 @@ struct TouchSettings {
     MeasureRate mRate[2] = {_250ms, _2s};
 
     std::array<uint8_t, 4> mThresholds{{30, 30, 30, 30}};
+    //std::array<int, 4> mThresholds{{1000, 1000, 1000, 1000}};
     std::array<uint8_t, 4> mMap{{0,1,2,3}};
 
     bool mSetup : 1 {false};

@@ -46,6 +46,7 @@ struct Speaker {
         .timer_sel = kTimer,
         .duty = 0,
         .hpoint = 0,
+        .sleep_mode = LEDC_SLEEP_MODE_KEEP_ALIVE,
         .flags = {
           .output_invert = 0,
         }
@@ -83,7 +84,8 @@ struct Speaker {
       .duty_resolution = calc_resolution(freq),
       .timer_num = kTimer,
       .freq_hz = freq, // Set output frequency
-      .clk_cfg = kClock
+      .clk_cfg = kClock,
+      .deconfigure = false,
     };
     ledc_timer_config(&ledc_timer);
     uint32_t halfDuty = 1 << (ledc_timer.duty_resolution - 1);

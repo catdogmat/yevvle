@@ -35,7 +35,7 @@ void RTC_IRAM_ATTR turnOffGpio() {
   for (auto& pin : std::array{D::Cs, D::Dc, D::Res, D::Mosi, D::Sck}) {
     GPIO_DIS_OUTPUT(pin);
   }
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
 #else
   GPIO_MODE_INPUT(7); // TODO: Make it using the variable HW::Display::Busy
@@ -44,7 +44,7 @@ void RTC_IRAM_ATTR turnOffGpio() {
 
 void RTC_IRAM_ATTR feed_wdt() {
   // More than 500ms it is better to reset the MWDT0
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
   TIMERG0.wdtwprotect.wdt_wkey = TIMG_WDT_WKEY_VALUE;
 #else
   TIMERG0.wdtwprotect.wdt_wkey = TIMG_WDT_WKEY_V;
@@ -53,7 +53,7 @@ void RTC_IRAM_ATTR feed_wdt() {
   TIMERG0.wdtwprotect.wdt_wkey = 0;
 }
 
-#if (HW_VERSION >= 3)
+#if (HW_VERSION >= 10)
 const RTC_DATA_ATTR rtc_io_desc_t descRes = rtc_io_desc[rtc_io_num_map[HW::Display::Res]];
 #endif
 
@@ -73,7 +73,7 @@ void RTC_IRAM_ATTR microSleep(uint32_t micros) {
 void RTC_IRAM_ATTR wake_stub_example(void)
 {
   // This sets up the delay to work properly
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
   auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
   ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
 #else
@@ -89,7 +89,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
 
     uSpi::init();
 
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
     // Wait until display busy goes off (this will not be needed in next HW version
     GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
     while(GPIO_INPUT_GET(19) != 0) {
@@ -120,7 +120,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
     auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
     esp_wake_stub_set_wakeup_time(
       minutes * 60'000'000
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
       - busyWait.currentWait
 #endif
       );
@@ -163,17 +163,20 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   Light::off();
 
   // Reset display to wake it up
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::Display::Res
 #else
   CLEAR_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
   GPIO_MODE_OUTPUT(6); // TODO: Make it using the variable HW::Display::Res
 #endif
   GPIO_OUTPUT_SET(HW::Display::Res, 0);
-  esp_rom_delay_us(1'000); // HW 3 suspiciusly is 2X this time
-  // microSleep(300'000);
+#if (HW_VERSION < 10)
+  esp_rom_delay_us(1'000);
+#else
+  esp_rom_delay_us(500); // HW 3 suspiciusly is 2X this time
+#endif
   GPIO_OUTPUT_SET(HW::Display::Res, 1);
-#if (HW_VERSION >= 3)
+#if (HW_VERSION >= 10)
   SET_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
 #endif
 
@@ -206,7 +209,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   turnOffGpio();
   kDSState.displayBusy = true;
 
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   // Set wakeup timer when we guess display will finish refreshing, to put display to hibernation
   esp_wake_stub_set_wakeup_time(busyWait.currentWait);
 #else

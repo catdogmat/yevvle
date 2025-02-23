@@ -3,7 +3,7 @@
 #include "display.h"
 
 struct DeepSleepState {
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
   // This is needed because the HW pin is not properly wired to a RTC GPIO
   struct BusyWait {
     constexpr static auto kStartWait = 25'000u; // Super low value to start with

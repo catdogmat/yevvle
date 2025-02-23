@@ -36,7 +36,7 @@ void Light::set(bool high) {
     return;
 
   // Hold disable
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   REG_CLR_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_CLR_BIT(desc.reg, desc.hold);
 #else
@@ -46,10 +46,10 @@ void Light::set(bool high) {
   // Deep sleep hold disable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
 
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   GPIO_MODE_OUTPUT(25);
 #else
-  GPIO_MODE_OUTPUT(25);
+  // GPIO_MODE_OUTPUT(25);
 #endif
   GPIO_OUTPUT_SET(HW::kLightPin, high);
 
@@ -61,7 +61,7 @@ void Light::set(bool high) {
   }
 
   // Hold enable
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   REG_SET_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_SET_BIT(desc.reg, desc.hold);
 #else

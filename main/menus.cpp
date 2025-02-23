@@ -117,6 +117,12 @@ UI::Any Core::createMainMenu() {
           delay(50'000);
         }));
       }},
+      UI::Action{"GPS Test", [&]{
+        extern void gps(void);
+        mTasks.emplace_back(std::async(std::launch::async, []{
+          gps();
+        }));
+      }},
       UI::Action{"Light toggle", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
           Light::toggle();

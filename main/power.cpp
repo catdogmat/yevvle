@@ -39,7 +39,7 @@ void Power::set(bool high) {
     return;
 
   // Hold disable
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   REG_CLR_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_CLR_BIT(desc.reg, desc.hold);
 #else
@@ -48,15 +48,15 @@ void Power::set(bool high) {
   // Deep sleep hold disable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
 
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   GPIO_MODE_OUTPUT(13);
 #else
-  GPIO_MODE_OUTPUT(13);
+  // GPIO_MODE_OUTPUT(13);
 #endif
   GPIO_OUTPUT_SET(HW::kVoltageSelectPin, high);
 
   // Hold enable
-#if (HW_VERSION < 3)
+#if (HW_VERSION < 10)
   REG_SET_BIT(RTC_CNTL_HOLD_FORCE_REG, desc.hold_force);
   REG_SET_BIT(desc.reg, desc.hold);
 #else

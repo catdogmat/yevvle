@@ -17,25 +17,38 @@ void Touch::setUp(bool onlyMenuLight) {
   touch_pad_init();
   touch_pad_set_voltage(TOUCH_HVOLT_2V4, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_0V);
   //touch_pad_set_cnt_mode(); 
-#if(HW_VERSION < 3)
+#if(HW_VERSION < 10)
   touch_pad_set_measurement_clock_cycles(mSettings.mCycles[0] * 1024);
 #else
   touch_pad_set_charge_discharge_times(mSettings.mCycles[0] * 1024);
 #endif
   touch_pad_set_measurement_interval((32 * 1024) * mSettings.mRate[0] / MeasureRate::_1s);
-  //touch_pad_set_trigger_mode(TOUCH_TRIGGER_BELOW);
-  //touch_pad_intr_enable();
+  // touch_pad_set_trigger_mode(TOUCH_TRIGGER_BELOW);
+  // touch_pad_intr_enable();
   esp_sleep_enable_touchpad_wakeup();
+
+  //   touch_sleep_config_t deep_slp_cfg = {
+  //   .slp_wakeup_lvl = TOUCH_DEEP_SLEEP_WAKEUP,
+  //   .deep_slp_chan = touch_channel_handle[pad],
+  //   .deep_slp_thresh = {threshold},
+  //   .deep_slp_sens_cfg = NULL,  // Use the original touch sensor configuration
+  // };
+  // touch_sensor_config_sleep_wakeup(deep_slp_cfg);
+
   //touch_pad_denoise_disable();
-  uint16_t mask {};
+  uint32_t mask {};
   auto setTouchPad = [&](auto&& v) {
-#if(HW_VERSION < 3)
-    touch_pad_config((touch_pad_t)HW::Touch::Pad[mSettings.mMap[v]], mSettings.mThresholds[v]);
+    auto pad = (touch_pad_t)HW::Touch::Pad[mSettings.mMap[v]];
+#if(HW_VERSION < 10)
+    touch_pad_config(pad, mSettings.mThresholds[v]);
+    // touch_ll_set_threshold(pad, threshold);
 #else
-    touch_pad_config((touch_pad_t)HW::Touch::Pad[mSettings.mMap[v]]);
-    touch_pad_sleep_set_threshold((touch_pad_t)HW::Touch::Pad[mSettings.mMap[v]], mSettings.mThresholds[v]);
+    touch_pad_config(pad);
+    touch_ll_set_threshold(pad, mSettings.mThresholds[v]);
+    touch_pad_sleep_channel_enable(pad, true);
+    touch_pad_sleep_set_threshold(pad, mSettings.mThresholds[v]);
 #endif
-    mask |= 1 << HW::Touch::Pad[mSettings.mMap[v]];
+    mask |= 1 << pad;
   };
   if (!onlyMenuLight) {
     setTouchPad(HW::Touch::BotR);
@@ -43,10 +56,13 @@ void Touch::setUp(bool onlyMenuLight) {
   }
   setTouchPad(HW::Touch::TopL);
   setTouchPad(HW::Touch::BotL);
+
   // Touch Sensor Timer initiated
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
-#if(HW_VERSION < 3)
+#if (HW_VERSION < 10)
   touch_pad_set_group_mask(mask, mask, mask); // Need to reset the mask after FSM on
+#else
+  touch_pad_fsm_start();
 #endif
   kDSState.lightPad = HW::Touch::Pad[mSettings.mMap[HW::Touch::BotL]];
 
