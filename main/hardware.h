@@ -5,7 +5,7 @@
 #include <sdkconfig.h>
 
 #if CONFIG_IDF_TARGET_ESP32S3
-#define HW_VERSION 4 // First WIP board
+#define HW_VERSION 10 // First WIP board
 #else
 #define HW_VERSION 2 // Last board fully working
 #endif
@@ -18,9 +18,7 @@ enum class HW_chips {ESP_32, ESP_32_S3};
 struct HW_1 {
     constexpr static uint8_t kVersion = 1;
     struct Touch {
-        // Layout of pads are TR=0, TL=2, BL=5, BR=6
-        // Default map to DOWN=BR=6, UP=TR=0, MENU=TL=2, BACK=BL=5
-        enum PadNames {BotR, TopR, TopL, BotL};
+        enum PadNames {BotR /*Down*/, TopR /*Up*/, TopL /*Menu*/, BotL /*Back*/};
         constexpr static std::array<uint8_t, 4> Pad = {{6,0,2,5}};
     };
 
@@ -76,9 +74,9 @@ struct HW_3 : public HW_2 {
         constexpr static uint8_t Busy = 37; // Input only pin
         constexpr static uint8_t Mosi = Display::Mosi; // Shared
         constexpr static uint8_t Miso = 38; // Input only pin
-        constexpr static uint8_t Dio1 = 36 // IRQ? // Input only pin
+        constexpr static uint8_t Dio1 = 36; // IRQ? // Input only pin
         constexpr static uint8_t Dio2 = 32;
-        constexpr static uint8_t Vcc = ?; // Can it share with RES?
+        //constexpr static uint8_t Vcc = ?; // Can it share with RES?
     };
 
     struct Gps {
@@ -90,17 +88,15 @@ struct HW_3 : public HW_2 {
 };
 
 
-// New board based on ESP32-S3-FN8 ?
+// New board based on ESP32-S3-FN8 ? Still WIP
 struct HW_10 {
     constexpr static uint8_t kVersion = 10;
 
     constexpr static HW_chips kChipType = HW_chips::ESP_32_S3;
 
     struct Touch {
-        // Layout of pads are TR=0, TL=2, BL=5, BR=6
-        // Default map to DOWN=BR=6, UP=TR=0, MENU=TL=2, BACK=BL=5
-        enum PadNames {BotR, TopR, TopL, BotL};
-        constexpr static std::array<uint8_t, 4> Pad = {{0,4,2,1}};
+        enum PadNames {BotR /*Down*/, TopR /*Up*/, TopL /*Menu*/, BotL /*Back*/};
+        constexpr static std::array<uint8_t, 4> Pad = {{1,2,4,3}};
     };
 
     struct Display {
