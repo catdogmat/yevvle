@@ -96,24 +96,24 @@ struct HW_10 {
 
     struct Touch {
         enum PadNames {BotR /*Down*/, TopR /*Up*/, TopL /*Menu*/, BotL /*Back*/};
-        constexpr static std::array<uint8_t, 4> Pad = {{1,2,4,3}};
+        constexpr static std::array<uint8_t, 4> Pad = {{4,5,6,7}};
     };
 
     struct Display {
-        constexpr static uint8_t Cs = 26;
-        constexpr static uint8_t Res = 6;
-        constexpr static uint8_t Dc = 5;
+        constexpr static uint8_t Cs = 34;
+        constexpr static uint8_t Res = 3;
+        constexpr static uint8_t Dc = 26;
         constexpr static uint8_t Sck = 19; //36;
-        constexpr static uint8_t Busy = 7;
+        constexpr static uint8_t Busy = 33;
         constexpr static uint8_t Mosi = 20; //35;
     };
 
-    constexpr static uint8_t kAdcPin = 21;
-    constexpr static uint8_t kRtcIntPin = 21;
-    constexpr static uint8_t kLightPin = 21;
-    constexpr static uint8_t kSpeakerPin = 21;
-    constexpr static uint8_t kVibratorPin = 21;
-    constexpr static uint8_t kVoltageSelectPin = 21;
+    constexpr static uint8_t kAdcPin = 1;
+    constexpr static uint8_t kRtcIntPin = 1;
+    constexpr static uint8_t kLightPin = 1;
+    constexpr static uint8_t kSpeakerPin = 1;
+    constexpr static uint8_t kVibratorPin = 1;
+    constexpr static uint8_t kVoltageSelectPin = 1;
 
     constexpr static bool kVoltageSelectInverted = false;
 };

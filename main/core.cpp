@@ -71,8 +71,7 @@ Core::Core()
 {
     // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
-    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-    ESP_LOGE("", "boot %lu reason %d", micros(), wakeup_reason);
+    // ESP_LOGE("", "boot %lu reason %d", micros(), wakeup_reason);
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
         handleTouch();
