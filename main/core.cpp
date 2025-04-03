@@ -55,7 +55,7 @@ Core::Core()
     Power::low();
     Light::off();
     // HACK: Set a fixed time to start with
-    struct timeval tv{.tv_sec=1723194200, .tv_usec=0};
+    struct timeval tv{.tv_sec=1743371529, .tv_usec=0};
     // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
     mTime.setTime(tv);
     // reset calibration to the ESP32
@@ -146,30 +146,12 @@ Core::Core()
             }
         }, findUi());
     }
-    
-    // bool inverted = false;
-    // while (true) {
-    //     mDisplay.setInverted(inverted = !inverted);
-    //     mDisplay.writeAllAndRefresh();
-    //     if (mTouch.readAndClear() != Touch::Btn::NONE)
-    //     break;
-    // }
-
-    // mDisplay.invertDisplay(true);
-    // mDisplay.refresh();
 
     // Finish display, setup touch and finish pending tasks
     mDisplay.hibernate();
     mTouch.setUp(kSettings.mUi.mDepth < 0);
     mTasks.clear();
     mTouch.clear(); // Clear it again in case the tasks took too long
-
-    
-    // rtc_gpio_pullup_en((gpio_num_t)HW::Display::Res);
-    // rtc_gpio_hold_en((gpio_num_t)HW::Display::Res);
-
-    // gpio_dump_io_configuration(stdout, (15ULL << 4) | (3ULL << 19));
-    // ESP_LOGE("deepSleep", "%ld", micros());
 
     // Calculate stepsize based on battery level or on battery save mode
     auto stepSize = [&] {
