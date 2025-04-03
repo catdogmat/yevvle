@@ -220,11 +220,15 @@ const UI::Any& Core::findUi() {
     const UI::Any* item = &mUi;
     for (auto i=0; i < kSettings.mUi.mDepth; i++) {
         auto& index = kSettings.mUi.mState[i];
+        const UI::Any* nextItem = nullptr;
         std::visit([&](auto& e) {
             if constexpr (has_sub<decltype(e), uint8_t>::value) {
-                item = &e.sub(index);
+                nextItem = e.sub(index);
             }
         }, *item);
+        if (nextItem == nullptr)
+            break;
+        item = nextItem;
     }
     return *item;
 }

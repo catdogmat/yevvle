@@ -176,9 +176,7 @@ struct Sub : public Name {
     std::vector<Any> items;
 
     void capture_input() const {};
-    const Any& sub(uint8_t index) const {
-        return items[index];
-    };
+    const Any* sub(uint8_t index) const;
     void button_menu() const;
     void button_updown(int b) const;
     int index() const;

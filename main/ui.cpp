@@ -30,6 +30,11 @@ namespace {
 
 namespace UI {
 
+const Any* Sub::sub(uint8_t index) const {
+    if (index >= items.size())
+        return nullptr;
+    return items.data() + index;
+}
 void Sub::button_menu() const {
     if (items.empty())
         return;
