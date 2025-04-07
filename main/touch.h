@@ -5,6 +5,8 @@
 
 #include <magic_enum.hpp>
 
+#include "hardware.h"
+
 enum MeasureRate {
     _125ms = 1, // Extremely fast
     _250ms = 2,
@@ -22,13 +24,13 @@ enum MeasureCycles {
 struct TouchSettings {
     // More cycles more accurate, and more power
     // More often checks, also more power
-    MeasureCycles mCycles[2] = {_31ms};
+    MeasureCycles mCycles[2] = {_31ms, _31ms};
     MeasureRate mRate[2] = {_250ms, _2s};
 
   #if(HW_VERSION < 10)
     std::array<uint8_t, 4> mThresholds{{30, 30, 30, 30}};
   #else
-    std::array<int, 4> mThresholds{{10000, 10000, 10000, 10000}};
+    std::array<int, 4> mThresholds{{1000, 1000, 1000, 1000}};
   #endif
     std::array<uint8_t, 4> mMap{{0,1,2,3}};
 

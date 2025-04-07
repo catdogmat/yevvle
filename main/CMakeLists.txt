@@ -19,6 +19,7 @@ set(privrequires
 set(srcs 
     main.cpp
     display.cpp
+    display_draw.cpp
     battery.cpp
     core.cpp
     power.cpp
@@ -37,7 +38,7 @@ set(srcs
     # WIP stuff
     # ble.cpp
     gps.cpp
-    # lora.cpp
+    lora.cpp
 )
 
 set(CMAKE_CXX_STANDARD 23)

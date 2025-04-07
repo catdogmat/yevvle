@@ -40,7 +40,7 @@ public:
     // Wrappers
     void adjustTime(const timeval& time);
     void adjustTime(const int32_t& seconds);
-    void setTime(const tmElements_t& elements);
+    void setTime(const tmElements_t& elements, bool raw = false);
     void setTime(const time_t&);
 
     // Calibration

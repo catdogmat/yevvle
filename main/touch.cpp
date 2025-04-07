@@ -1,5 +1,4 @@
 #include "touch.h"
-#include "hardware.h"
 #include "deep_sleep.h"
 
 #include "hal/touch_sensor_hal.h"
@@ -20,12 +19,13 @@ void Touch::setUp(bool onlyMenuLight) {
   }
   touch_pad_init();
   touch_pad_set_voltage(TOUCH_HVOLT_2V4, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_0V);
-  #if(HW_VERSION < 10)
+#if(HW_VERSION < 10)
   touch_ll_set_meas_time(mSettings.mCycles[0] * 1024);
-  #else
-  touch_ll_set_meas_times(mSettings.mCycles[0] * 1024);
-  #endif
   touch_pad_set_measurement_interval((32 * 1024) * mSettings.mRate[0] / MeasureRate::_1s / (2 << !onlyMenuLight));
+#else
+  touch_ll_set_meas_times(mSettings.mCycles[0] * 1024);
+  touch_pad_set_measurement_interval((8 * 1024) * mSettings.mRate[0] / MeasureRate::_1s / (2 << !onlyMenuLight));
+#endif
   // touch_pad_set_trigger_mode(TOUCH_TRIGGER_BELOW);
   // touch_pad_intr_enable();
   esp_sleep_enable_touchpad_wakeup();
@@ -70,6 +70,13 @@ Touch::Btn Touch::read() const {
   uint32_t mask;
   touch_ll_read_trigger_status_mask(&mask);
   // ESP_LOGE("mask", "%lu", mask);
+
+  // Strange, but For S3 if the mask is unset, it is the last-pad
+  if constexpr (HW::kChipType == HW_chips::ESP_32_S3) {
+    if (mask == 0) {
+      mask = 1 << HW::Touch::Pad.back();
+    }
+  }
 
   uint8_t bitmask {};
   for (auto i = 0; i < HW::Touch::Pad.size(); i++)

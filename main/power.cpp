@@ -30,8 +30,12 @@ void Power::unlock() {
 const RTC_DATA_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
 
 void Power::set(bool high) {
+  // Could be that the board only supports a given high voltage
+  if constexpr (!HW::kHasLowVoltage)
+    high = true;
+
   // The value changes based on the board! Old boards have the values fliped
-  if (HW::kVoltageSelectInverted)
+  if constexpr (HW::kVoltageSelectInverted)
     high = !high;
 
   // Caches previous values
@@ -51,7 +55,7 @@ void Power::set(bool high) {
 #if (HW_VERSION < 10)
   GPIO_MODE_OUTPUT(13);
 #else
-  // GPIO_MODE_OUTPUT(13);
+  GPIO_MODE_OUTPUT(5);
 #endif
   GPIO_OUTPUT_SET(HW::kVoltageSelectPin, high);
 

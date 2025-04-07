@@ -45,19 +45,21 @@ struct WatchfaceSettings {
     } mConfig;
 };
 
+class Core;
+class Settings;
+
 /* This class handles the Draw of the display watchface
  * in an optimal way, caching elements to avoid redrawing
  */
 class Watchface {
 protected:
+    // The watchface can access anything const
     struct {
-        DisplaySettings& mDisplay;
+        const Settings& mConst;
         WatchfaceSettings& mWatchface;
     } mSettings;
+    const Core& mCore;
     Display& mDisplay;
-    const Battery& mBattery;
-    const Time& mTime;
-    const tmElements_t& mNow;
 
     // Needs to implement minute uni/dec draw & return Rect coordinates
     virtual void drawU(uint8_t d);
@@ -73,17 +75,13 @@ protected:
 
 public:
     explicit Watchface(
-        DisplaySettings& dispSet,
+        const Settings& settings,
         WatchfaceSettings& watchSet,
-        Display& display, 
-        const Battery& battery,
-        const Time& time,
-        const tmElements_t& now)
-    : mSettings{dispSet, watchSet}
-    , mDisplay{display}
-    , mBattery(battery)
-    , mTime(time)
-    , mNow(now)
+        const Core& core,
+        Display& display)
+    : mSettings{settings, watchSet}
+    , mCore(core)
+    , mDisplay(display)
     {}
 
     void draw();

@@ -23,8 +23,12 @@ void Time::adjustTime(const int32_t& seconds) {
     adjustTime(time);
 }
 
-void Time::setTime(const tmElements_t& elements) {
-    setTime(makeTime(elements) - mSettings.mMinutesWest * 60);
+void Time::setTime(const time_t& seconds) {
+    setTime(timeval{.tv_sec = seconds, .tv_usec = 0});
+}
+
+void Time::setTime(const tmElements_t& elements, bool raw) {
+    setTime(makeTime(elements) - !raw * mSettings.mMinutesWest * 60);
 }
 
 void Time::setTime(const timeval tm) {

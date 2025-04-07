@@ -1,8 +1,10 @@
+#include "core.h"
+#include "settings.h"
 #include "watchface.h"
 
 void Watchface::updateCache() {
   auto& cache = mSettings.mWatchface.mCache;
-  const auto& displ = mSettings.mDisplay;
+  const auto& displ = mSettings.mConst.mDisplay;
   const auto& watch = mSettings.mWatchface;
   if (cache.mDone && displ.mRotation == cache.mRotation && watch.mType == cache.mType)
     return; // Cache is valid!
@@ -40,6 +42,8 @@ void Watchface::updateCache() {
 void Watchface::draw() {
   // Check & update the cache if needed
   updateCache();
+
+  auto& mNow = mCore.mNow;
 
   auto& last = mSettings.mWatchface.mLastDraw;
   const auto needUpdateD = !last.mValid || last.mMinuteD != mNow.Minute / 10;

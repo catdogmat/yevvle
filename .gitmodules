@@ -32,3 +32,6 @@
 [submodule "components/sunset/sunset"]
 	path = components/sunset/sunset
 	url = https://github.com/buelowp/sunset
+[submodule "components/NeoGPS"]
+	path = components/NeoGPS
+	url = https://github.com/SlashDevin/NeoGPS

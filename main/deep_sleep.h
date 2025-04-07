@@ -28,4 +28,4 @@ struct DeepSleepState {
 
 extern struct DeepSleepState kDSState;
 
-extern void wake_stub_example(void);
+extern void wake_stub_deepsleep(void);

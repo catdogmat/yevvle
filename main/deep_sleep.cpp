@@ -70,23 +70,25 @@ void RTC_IRAM_ATTR microSleep(uint32_t micros) {
 }
 
 // wake up stub function stored in RTC memory
-void RTC_IRAM_ATTR wake_stub_example(void)
+void RTC_IRAM_ATTR wake_stub_deepsleep(void)
 {
   // This sets up the delay to work properly
 #if(HW_VERSION < 10)
   auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
   ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
 #else
-  ets_update_cpu_frequency(ets_get_xtal_freq() / 1'000'000);
+  // Needed?
+  // ets_update_cpu_frequency(ets_get_xtal_freq() / 1'000'000);
 #endif
 
+  const auto wakeupCause = esp_wake_stub_get_wakeup_cause();
+  
   // If we were waiting for a display finish, we need to complete it first
   if (kDSState.displayBusy) {
     kDSState.displayBusy = false;
 
     // Go back to low power mode
     Power::unlock();
-
     uSpi::init();
 
 #if(HW_VERSION < 10)
@@ -126,12 +128,12 @@ void RTC_IRAM_ATTR wake_stub_example(void)
       );
 
     // Set stub entry, then going to deep sleep again.
-    esp_wake_stub_sleep(&wake_stub_example);
+    esp_wake_stub_sleep(&wake_stub_deepsleep);
   }
 
   // Light on press button?
   // 8 for timer // 256 for touch
-  if (esp_wake_stub_get_wakeup_cause() == 256) {
+  if (wakeupCause == 256) {
     uint32_t mask;
     touch_ll_read_trigger_status_mask(&mask);
 
@@ -144,7 +146,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
       Light::toggle();
 
       // Go back to sleep, don´t touch the timer, if the user enters menu, then light will stay on
-      esp_wake_stub_sleep(&wake_stub_example);
+      esp_wake_stub_sleep(&wake_stub_deepsleep);
     }
     // Wake up, touch needs to handle by the Main code
     esp_default_wake_deep_sleep();
@@ -154,7 +156,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   // Check if we should just do normal wakeup
   // If it is not a timer wakeup, return to handle on the Main code
   // 8 for timer // 256 for touch
-  if (esp_wake_stub_get_wakeup_cause() != 8 || kDSState.minutes <= 0) {
+  if (wakeupCause != 8 || kDSState.minutes <= 0) {
     esp_default_wake_deep_sleep();
     return;
   }
@@ -167,7 +169,7 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::Display::Res
 #else
   CLEAR_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
-  GPIO_MODE_OUTPUT(6); // TODO: Make it using the variable HW::Display::Res
+  GPIO_MODE_OUTPUT(10); // TODO: Make it using the variable HW::Display::Res
 #endif
   GPIO_OUTPUT_SET(HW::Display::Res, 0);
 #if (HW_VERSION < 10)
@@ -214,9 +216,12 @@ void RTC_IRAM_ATTR wake_stub_example(void)
   esp_wake_stub_set_wakeup_time(busyWait.currentWait);
 #else
   // Set the wakeup on busy of the display
+  gpio_pad_input_enable(HW::Display::Busy);
+  gpio_pad_pulldown(HW::Display::Busy);
   gpio_pin_wakeup_enable(HW::Display::Busy, GPIO_PIN_INTR_LOLEVEL);
+  esp_wake_stub_set_wakeup_time(1000*1000*1000);
 #endif
 
   // Set stub entry, then going to deep sleep again.
-  esp_wake_stub_sleep(&wake_stub_example);
+  esp_wake_stub_sleep(&wake_stub_deepsleep);
 }

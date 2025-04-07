@@ -13,10 +13,4 @@ class DefaultWatchface : public Watchface {
 
   // Can optionally implement Other element drawing based & return vect of rect
   std::vector<Rect> render() override;
-
-
-  void drawEllipse(int x, int y, uint8_t width, uint8_t height, uint16_t on);
-  void drawEllipseDifference(int x, int y, uint8_t width1, uint8_t width2, uint8_t height, bool big, uint16_t color);
-  void drawMoonFast(float p, int x, int y, uint8_t r, uint16_t on, uint16_t off);
-  void drawMoon(float p, uint16_t x, uint16_t y, uint16_t radius, uint16_t on, uint16_t off);
 };

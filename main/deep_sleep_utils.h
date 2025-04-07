@@ -18,17 +18,3 @@
   #define GPIO_DIS_OUTPUT(gpio_no)   (gpio_output_set(0,0,0, 1<<gpio_no))
   #define GPIO_INPUT_GET(gpio_no)    ((gpio_input_get()>>gpio_no)&BIT0)
 #endif
-
-
-/**
-  * @brief Change GPIO(0-31) pin output by setting, clearing, or disabling pins, GPIO0<->BIT(0).
-  *         There is no particular ordering guaranteed; so if the order of writes is significant,
-  *         calling code should divide a single call into multiple calls.
-  *
-  * @param  uint32_t set_mask : the gpios that need high level.
-  * @param  uint32_t clear_mask : the gpios that need low level.
-  * @param  uint32_t enable_mask : the gpios that need be changed.
-  * @param  uint32_t disable_mask : the gpios that need diable output.
-  *
-  * @return None
-  */

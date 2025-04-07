@@ -22,7 +22,7 @@ static RTC_DATA_ATTR struct DisplayState {
   bool darkBorder : 1 {false};
   bool inverted : 1 {false};
   bool postInvert : 1 {false};
-  DisplayMode mode : 2 {DisplayMode::FAST};
+  DisplayMode mode : 2 {DisplayMode::FULL};
 } kState;
 
 int RTC_IRAM_ATTR getSetDisplayMode() { return kState.mode; };

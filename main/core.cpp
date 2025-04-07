@@ -36,8 +36,8 @@ Core::Core()
         pinMode(i, INPUT);
     }
 #else
-    // // Set all GPIOs to input that we are not using to avoid leaking power
-    // // This is NEEDED
+    // Set all GPIOs to input that we are not using to avoid leaking power
+    // This is NEEDED ?
     // const uint64_t ignore = 0b111111111110000000000000000000010001; // Ignore some GPIOs due to resets
     // for (int i = 0; i < GPIO_NUM_MAX; i++) {
     //     if ((ignore >> i) & 0b1)
@@ -51,13 +51,29 @@ Core::Core()
     // load NVS and load settings
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+
     // Select default voltage 2.6V
     Power::low();
     Light::off();
-    // HACK: Set a fixed time to start with
-    struct timeval tv{.tv_sec=1743371529, .tv_usec=0};
-    // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
-    mTime.setTime(tv);
+
+    // First boot, try to get GPS location, to setup time/location
+    if constexpr (HW::kHasGps) {
+        mGps.on();
+        while (!mGps.mData.mDateTime || !mGps.mData.mLocation) {
+            ESP_LOGE("GPS", "waiting GPS");
+            if (!mGps.read())
+                break;
+        }
+        if (mGps.mData.mDateTime)
+            mTime.setTime(*mGps.mData.mDateTime, true);
+        mGps.off();
+    } else {
+        // HACK: Set a fixed time to start with
+        struct timeval tv{.tv_sec=1743371529, .tv_usec=0};
+        // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
+        mTime.setTime(tv);
+    }
+
     // reset calibration to the ESP32
     mTime.calReset();
 
@@ -69,24 +85,23 @@ Core::Core()
 , mNow{mTime.getElements()}
 , mUi{createMainMenu()}
 {
+    ESP_LOGE("boot","");
     // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
-    // ESP_LOGE("", "boot %lu reason %d", micros(), wakeup_reason);
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
         handleTouch();
     } break;
     case ESP_SLEEP_WAKEUP_TIMER: // Internal Timer
-    case ESP_SLEEP_WAKEUP_EXT0: // RTC Alarm ?
-        // Check alarms, vibration, beeps, etc.
         // Check watchdog -> reset to watchFace
         if (kSettings.mTouchWatchDog) {
             kSettings.mUi.mDepth = -1; // Reset to watchFace
         }
         kSettings.mTouchWatchDog = true;
         break;
-    default: // Lets assume first time boot ?
-        // ESP_LOGE("ev", "%d", (int)wakeup_reason);
+    case ESP_SLEEP_WAKEUP_EXT0: // Used for LoRa reception
+    default:
+        ESP_LOGE("", "boot %lu unkown wakeup reason %d", micros(), wakeup_reason);
         break;
     }
 
@@ -121,7 +136,7 @@ Core::Core()
     // Show watch face or menu ?
     if (kSettings.mUi.mDepth < 0) {
         mDisplay.setRefreshMode(kSettings.mDisplay.mWatchLut);
-        #define ARGS kSettings.mDisplay, kSettings.mWatchface, mDisplay, mBattery, mTime, mNow
+        #define ARGS kSettings, kSettings.mWatchface, *this, mDisplay
         // Instantiate the watchface type we are using
         switch(kSettings.mWatchface.mType) {
             default: DefaultWatchface(ARGS).draw(); break;
@@ -187,12 +202,20 @@ Core::Core()
         // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
         kDSState.stepSize = stepSize;
         // Only trigger the wakeupstub if there is any minute left
-        if (kDSState.minutes > 0)
-            esp_set_deep_sleep_wake_stub(&wake_stub_example);
+        if (kDSState.minutes > 0) {
+            if constexpr (HW::kHasDisplayBusyWake)
+                esp_sleep_enable_ext0_wakeup((gpio_num_t)HW::Display::Busy, 0);
+            esp_set_deep_sleep_wake_stub(&wake_stub_deepsleep);
+        }
+        auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
+        esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
+    } else {
+        // Disable the wake stub and count a fix time
+        esp_set_deep_sleep_wake_stub(NULL);
+        esp_sleep_enable_timer_wakeup(10'000'000);
     }
 
-    auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
-    esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
+    esp_deep_sleep_disable_rom_logging();
     esp_deep_sleep_start();
     ESP_LOGE("deepSleep", "never reach!");
 }

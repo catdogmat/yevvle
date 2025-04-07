@@ -3,6 +3,7 @@
 #include <future>
 #include <vector>
 
+#include "gps.h"
 #include "display.h"
 #include "watchface.h"
 #include "battery.h"
@@ -15,10 +16,11 @@
  * the code that handles the setup/menus/misc.
  */
 class Core {
+    std::vector<std::future<void>> mTasks;
+
 public:
     Core();
 
-private:
     void handleTouch();
     const UI::Any& findUi();
     UI::Any createMainMenu();
@@ -30,8 +32,7 @@ private:
     Display mDisplay;
     Battery mBattery;
     Touch mTouch;
-
-    std::vector<std::future<void>> mTasks;
+    Gps mGps;
 
     const tmElements_t& mNow;
     const UI::Any mUi;

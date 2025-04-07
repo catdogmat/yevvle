@@ -88,11 +88,11 @@ UI::Any Core::createMainMenu() {
           Peripherals::vibrator(std::vector<int>{75,75,75});
         }));
       }},
-      UI::Action{"Vib 1x75ms", [&]{
-        mTasks.emplace_back(std::async(std::launch::async, []{
-          Peripherals::vibrator(std::vector<int>{75});
-        }));
-      }},
+      // UI::Action{"Vib 1x75ms", [&]{
+      //   mTasks.emplace_back(std::async(std::launch::async, []{
+      //     Peripherals::vibrator(std::vector<int>{75});
+      //   }));
+      // }},
       UI::Action{"Vib 200ms", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
           Peripherals::vibrator(std::vector<int>{200});
@@ -117,10 +117,27 @@ UI::Any Core::createMainMenu() {
           delay(50'000);
         }));
       }},
-      UI::Action{"GPS Test", [&]{
-        extern void gps(void);
+      UI::Action{"Lora Test", [&]{
+        extern void lora(void);
         mTasks.emplace_back(std::async(std::launch::async, []{
-          gps();
+          lora();
+        }));
+      }},
+      UI::Action{"GPS Test", [&]{
+        mTasks.emplace_back(std::async(std::launch::async, [&]{
+          mGps.read();
+          if (mGps.mData.mDateTime) {
+            auto& dt = *mGps.mData.mDateTime;
+            ESP_LOGE("gps", "received time %d/%d/%d %d:%d:%d", 
+              dt.Year, dt.Month, dt.Day,
+              dt.Hour, dt.Minute, dt.Second);
+          }
+          // if (fix.valid.date)
+          //   ESP_LOGE("gps", "received date %d:%d:%d", 
+          //     fix.dateTime.hours, fix.dateTime.minutes, fix.dateTime.seconds);
+          // if (fix.valid.location)
+          //   ESP_LOGE("gps", "received loc %f : %f ", fix.latitude(), fix.longitude());
+
         }));
       }},
       UI::Action{"Light toggle", [&]{
