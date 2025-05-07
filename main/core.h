@@ -3,7 +3,9 @@
 #include <future>
 #include <vector>
 
+#include "spi.h"
 #include "gps.h"
+#include "lora.h"
 #include "display.h"
 #include "watchface.h"
 #include "battery.h"
@@ -29,10 +31,12 @@ public:
 
     Time mTime;
     const bool mFirstTimeBoot;
+    Spi mSpi;
     Display mDisplay;
+    Gps mGps;
+    Lora mLora;
     Battery mBattery;
     Touch mTouch;
-    Gps mGps;
 
     const tmElements_t& mNow;
     const UI::Any mUi;

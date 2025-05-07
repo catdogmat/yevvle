@@ -35,3 +35,6 @@
 [submodule "components/NeoGPS"]
 	path = components/NeoGPS
 	url = https://github.com/SlashDevin/NeoGPS
+[submodule "components/radioLib/RadioLib"]
+	path = components/radioLib/RadioLib
+	url = https://github.com/jgromes/RadioLib

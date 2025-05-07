@@ -35,8 +35,8 @@ namespace uSpi {
     dev.ctrl.rd_bit_order = 0;
 
 #if (HW_VERSION < 10)
-    gpio_matrix_out(HW::Display::Sck, VSPICLK_OUT_IDX, false, false);
-    gpio_matrix_out(HW::Display::Mosi, VSPID_IN_IDX, false, false);
+    gpio_matrix_out(HW::Spi::Sck, VSPICLK_OUT_IDX, false, false);
+    gpio_matrix_out(HW::Spi::Mosi, VSPID_IN_IDX, false, false);
     gpio_matrix_out(HW::Display::Cs, VSPICS0_OUT_IDX, false, false);
     dev.pin.val = dev.pin.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 
@@ -53,13 +53,13 @@ namespace uSpi {
     dev.dma_conf.rx_seg_trans_clr_en = 1;
 
     // These pins need to be set as GPIO before can be used in the matrix
-    if constexpr (HW::Display::Sck == 19 || HW::Display::Mosi == 19 || HW::Display::Cs == 19)
+    if constexpr (HW::Spi::Sck == 19 || HW::Spi::Mosi == 19 || HW::Display::Cs == 19)
       gpio_ll_iomux_func_sel(IO_MUX_GPIO19_REG, PIN_FUNC_GPIO);
-    if constexpr (HW::Display::Sck == 20 || HW::Display::Mosi == 20 || HW::Display::Cs == 20)
+    if constexpr (HW::Spi::Sck == 20 || HW::Spi::Mosi == 20 || HW::Display::Cs == 20)
       gpio_ll_iomux_func_sel(IO_MUX_GPIO20_REG, PIN_FUNC_GPIO);
 
-    gpio_matrix_out(HW::Display::Sck, SPI3_CLK_OUT_IDX, false, false);
-    gpio_matrix_out(HW::Display::Mosi, SPI3_D_IN_IDX, false, false);
+    gpio_matrix_out(HW::Spi::Sck, SPI3_CLK_OUT_IDX, false, false);
+    gpio_matrix_out(HW::Spi::Mosi, SPI3_D_IN_IDX, false, false);
     gpio_matrix_out(HW::Display::Cs, SPI3_CS0_OUT_IDX, false, false);
     dev.misc.val = dev.misc.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 

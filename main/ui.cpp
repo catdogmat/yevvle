@@ -12,23 +12,23 @@ namespace {
     int curIndex(std::size_t size) {
         return (ui.mState[ui.mDepth] + size) % std::max(1u, size);
     }
-
-    void renderHeader(Display& mDisplay, const std::string& name, size_t size = 2) {
-        // Text size for all the Menu
-        mDisplay.setTextSize(size);
-
-        // Print the menu title on top, centered
-        mDisplay.setTextColor(1, 0);
-        auto w = mDisplay.getTextRect(name.c_str()).w;
-        mDisplay.setCursor((mDisplay.WIDTH - w) / 2, mDisplay.getCursorY());
-        mDisplay.println(name.c_str());
-        // Underscore the title then leave a gap
-        mDisplay.drawFastHLine((mDisplay.WIDTH - w) / 2, mDisplay.getCursorY(), w, 1);
-        mDisplay.setCursor(mDisplay.getCursorX(), mDisplay.getCursorY() + 5);
-    }
 }
 
 namespace UI {
+
+void renderHeader(Display& mDisplay, const std::string& name, size_t size) {
+    // Text size for all the Menu
+    mDisplay.setTextSize(size);
+
+    // Print the menu title on top, centered
+    mDisplay.setTextColor(1, 0);
+    auto w = mDisplay.getTextRect(name.c_str()).w;
+    mDisplay.setCursor((mDisplay.WIDTH - w) / 2, mDisplay.getCursorY());
+    mDisplay.println(name.c_str());
+    // Underscore the title then leave a gap
+    mDisplay.drawFastHLine((mDisplay.WIDTH - w) / 2, mDisplay.getCursorY(), w, 1);
+    mDisplay.setCursor(mDisplay.getCursorX(), mDisplay.getCursorY() + 5);
+}
 
 const Any* Sub::sub(uint8_t index) const {
     if (index >= items.size())
@@ -89,7 +89,6 @@ void Number::render(Display& mDisplay) const {
     mDisplay.print("< ");
     mDisplay.print(get());
     mDisplay.println(" >");
-    mDisplay.println();
 
     mDisplay.writeAllAndRefresh(); 
 }
@@ -119,8 +118,9 @@ void DateTime::button_updown(int v) const{
     } else {
         val += v;
     }
+
     // Calculate diff and set that adjustment
-    mTime.adjustTime(static_cast<int32_t>(makeTime(cur)) - mTime.getTimeval().tv_sec);
+    mTime.adjustTime(static_cast<int32_t>(makeTime(cur)) - mTime.getTimeval().tv_sec - mTime.getMinutesWest() * 60);
 }
 void DateTime::render(Display& mDisplay) const {
     renderHeader(mDisplay, baseName);

@@ -14,4 +14,6 @@ struct Power {
 
     static void RTC_IRAM_ATTR lock();
     static void RTC_IRAM_ATTR unlock();
+
+    static bool current();
 };

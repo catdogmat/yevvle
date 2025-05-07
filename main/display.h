@@ -42,7 +42,6 @@ class Display : public Adafruit_GFX {
 public:
   static constexpr bool kReduceBoosterTime = true; // Saves ~200ms + Reduce power usage
   static constexpr bool kFastUpdateTemp = true; // Saves 5ms + FixedSpeedier LUT (300ms update)
-  static constexpr bool kCsHw = true; // Gives the SPI driver the Cs control
   static constexpr bool kOverdriveSPI = false; // Uses a 25% faster SPI out of spec
 
   static constexpr uint8_t WIDTH = 200;
@@ -50,8 +49,6 @@ public:
   static constexpr uint8_t WB_BITMAP = (WIDTH + 7) / 8;
 
   uint8_t buffer[WB_BITMAP * HEIGHT];
-
-  static const SPISettings _spi_settings;
 
   Display();
 

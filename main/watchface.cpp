@@ -95,8 +95,9 @@ void Watchface::draw() {
   }
 
   // Convert to aligned rotated coords, makes easier the copy
-  for (auto& c : composables)
+  for (auto& c : composables) {
     mDisplay.alignRect(c);
+  }
 
   // Update display / refresh
   if (!last.mValid){

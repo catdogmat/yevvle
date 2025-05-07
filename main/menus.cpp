@@ -10,13 +10,11 @@ UI::Any Core::createMainMenu() {
   return UI::Menu{"Main Menu", {
       UI::Menu{"Clock", {
         UI::DateTime{"Set DateTime", mTime},
-        UI::Menu{"Set TimeZone", {
           UI::Number{"UTC",
             []{ return kSettings.mTime.mMinutesWest / 60;},
             [](int v){ auto& west = kSettings.mTime.mMinutesWest;
-                       west = std::clamp<int16_t>(west + v * 60, -12*60, 12*60);}
-          }
-        }},
+                       west = std::clamp<int16_t>(west + v * 60, -12 * 60, 12 * 60);}
+          },
         UI::Menu{"Calibration", {
           UI::Action{"Sync", [&]{ mTime.calUpdate(); }},
           UI::Action{"Reset", [&]{ mTime.calReset(); }},
@@ -44,8 +42,8 @@ UI::Any Core::createMainMenu() {
       UI::Menu{"Hour Beep", {
         UI::Bool{"Beep", kSettings.mHourly.mBeep },
         UI::Bool{"Vibrate", kSettings.mHourly.mVib },
-        UI::Loop<uint8_t>{"First Hour", kSettings.mHourly.mFirst, 24 },
-        UI::Loop<uint8_t>{"Last Hour", kSettings.mHourly.mLast, 24 },
+        UI::NumberRange<int8_t>{"First Hour", kSettings.mHourly.mFirst, {0, 24} },
+        UI::NumberRange<int8_t>{"Last Hour", kSettings.mHourly.mLast, {0, 24} },
       }},
       UI::Menu{"Alarms", {
       }},
@@ -74,13 +72,13 @@ UI::Any Core::createMainMenu() {
     }},
     UI::Menu{"Power Save", {
       UI::Bool{"Night (0-6am)", kSettings.mPowerSave.mNight },
-      UI::Bool{"Auto (bat <25%)", kSettings.mPowerSave.mAuto },
+      UI::Bool{"Auto (<25%)", kSettings.mPowerSave.mAuto },
     }},
     UI::Menu{"Touch", {
+      UI::Bool{"Haptic", kSettings.mTouch.mHaptic},
+      UI::NumberRange<int8_t>{"Sensitivity", kSettings.mTouch.mSensitivity, {20, 70}},
       UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
       UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
-      // UI::Loop<MeasureCycles>{"Menu", kSettings.mTouch.mCycles[0]},
-      // UI::Loop<MeasureCycles>{"Watch", kSettings.mTouch.mCycles[1]},
     }},
     UI::Menu{"Test", {
       UI::Action{"Vib 2x75ms", [&]{
@@ -118,16 +116,17 @@ UI::Any Core::createMainMenu() {
         }));
       }},
       UI::Action{"Lora Test", [&]{
-        extern void lora(void);
-        mTasks.emplace_back(std::async(std::launch::async, []{
-          lora();
+        mTasks.emplace_back(std::async(std::launch::async, [&]{
+          // mLora.setup();
+          //mLora.listen();
+          mLora.startReceive();
         }));
       }},
       UI::Action{"GPS Test", [&]{
         mTasks.emplace_back(std::async(std::launch::async, [&]{
           mGps.read();
-          if (mGps.mData.mDateTime) {
-            auto& dt = *mGps.mData.mDateTime;
+          if (auto dateTime = mGps.mData.mDateTime) {
+            auto& dt = dateTime->mElements;
             ESP_LOGE("gps", "received time %d/%d/%d %d:%d:%d", 
               dt.Year, dt.Month, dt.Day,
               dt.Hour, dt.Minute, dt.Second);

@@ -13,8 +13,8 @@ struct Settings {
     struct Hourly {
         bool mBeep {false};
         bool mVib {false};
-        uint8_t mFirst {23};
-        uint8_t mLast {0};
+        int8_t mFirst {23};
+        int8_t mLast {0};
     } mHourly;
 
     UiSettings mUi;

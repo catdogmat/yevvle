@@ -50,6 +50,8 @@ class Time;
 
 namespace UI {
 
+void renderHeader(Display& mDisplay, const std::string& name, size_t size = 2);
+
 struct Name {
     std::string baseName;
     std::string name() const { return baseName; };
@@ -144,6 +146,25 @@ struct Number : public Name {
     void button_updown(int v) const {change(v);}
     void render(Display&) const;
 };
+template<typename T>
+struct NumberRange : public Name {
+    T& ref;
+    std::pair<T,T> range; // Valid Range
+
+    void capture_input() const {};
+
+    std::string name() const { return std::to_string(ref) + " " + baseName; }
+    void button_updown(int v) const { 
+        ref = (ref - range.first + v + range.second) % (range.second - range.first); }
+    void render(Display& d) const {
+        renderHeader(d, baseName);
+        d.println();
+        d.print("< ");
+        d.print(ref);
+        d.println(" >");
+        d.writeAllAndRefresh(); 
+    }
+};
 
 struct DateTime : public Name {
     Time& mTime;
@@ -169,6 +190,7 @@ using Any = std::variant<
     Loop<uint8_t>,
     Bool,
     Number,
+    NumberRange<int8_t>,
     Text,
     Name>;
 

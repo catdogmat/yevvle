@@ -26,6 +26,10 @@ void Power::unlock() {
   }
 }
 
+bool Power::current() {
+  return kPrev;
+}
+
 // Need to store this in RTC memory since will not be available in DeepSleep
 const RTC_DATA_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
 
@@ -34,13 +38,14 @@ void Power::set(bool high) {
   if constexpr (!HW::kHasLowVoltage)
     high = true;
 
-  // The value changes based on the board! Old boards have the values fliped
-  if constexpr (HW::kVoltageSelectInverted)
-    high = !high;
-
   // Caches previous values
   if (kPrev == high)
     return;
+  kPrev = high;
+
+  // The value changes based on the board! Old boards have the values fliped
+  if constexpr (HW::kVoltageSelectInverted)
+    high = !high;
 
   // Hold disable
 #if (HW_VERSION < 10)
@@ -70,6 +75,4 @@ void Power::set(bool high) {
   // Deep sleep hold enable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_FORCE_UNHOLD);
   SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
-
-  kPrev = high;
 }

@@ -12,7 +12,7 @@ RTC_DATA_ATTR Gps::Data Gps::mData {};
 void Gps::set(bool high) {
   rtc_gpio_hold_dis((gpio_num_t)HW::Gps::Vcc);
   pinMode(HW::Gps::Vcc, OUTPUT);
-  digitalWrite(HW::Gps::Vcc, high);
+  digitalWrite(HW::Gps::Vcc, !high);
   rtc_gpio_hold_en((gpio_num_t)HW::Gps::Vcc);
 }
 
@@ -25,17 +25,20 @@ bool Gps::read() {
 
   // Initialize HW serial to receive data
   HardwareSerial mSerial{2};
-  mSerial.begin(HW::Gps::BaudRate, SERIAL_8N1, HW::Gps::Rx, HW::Gps::Tx);
+  mSerial.begin(HW::Gps::BaudRate, SERIAL_8N1, HW::Gps::Rx, -1/*, HW::Gps::Tx*/, false, 1000);
 
   // If there is data in the receive buffer of the hardware serial
   // Discard all data until the $ sign
   while (!mSerial.readStringUntil('$').isEmpty()) {
+    delay(1); // Feed the wdt
     // Read a packet
     auto packet = mSerial.readStringUntil('*');
     // ESP_LOGE("gps", "%s", packet.c_str());
     // Early exit
     if (packet.substring(2,5) != "RMC") 
       continue;
+
+    ESP_LOGE("gps", "Processing: %s", packet.c_str());
     // Read CRC
     char crcBytes[2];
     mSerial.readBytes(crcBytes, 2);
@@ -75,11 +78,11 @@ bool Gps::read() {
       dt.Hour = std::stoi(fields[1].substr(0, 2));
       dt.Minute = std::stoi(fields[1].substr(2, 2));
       dt.Second = std::stoi(fields[1].substr(4, 2));
-      //dt.ms = std::stoi(fields[1].substr(7, 2));
+      auto centiSeconds = std::stoi(fields[1].substr(7, 2));
       dt.Day = std::stoi(fields[9].substr(0, 2));
       dt.Month = std::stoi(fields[9].substr(2, 2));
       dt.Year = 30 + std::stoi(fields[9].substr(4, 2));
-      mData.mDateTime.emplace(dt);
+      mData.mDateTime.emplace(dt, centiSeconds);
     }
 
     // Speed

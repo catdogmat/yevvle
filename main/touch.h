@@ -8,42 +8,50 @@
 #include "hardware.h"
 
 enum MeasureRate {
-    _125ms = 1, // Extremely fast
+    // _125ms = 1, // Extremely fast
     _250ms = 2,
     _500ms = 4,
     _1s = 8,
-    _2s = 16,
+    _2s = 15, // 16 would overflow
     // _4s = 32, // Not possible, limit is 2s
 };
 
 enum MeasureCycles {
-    _31ms = 1,
-    // _62ms = 2,
+    _31ms = 1,  // 50-60 -> 30-35 // 33-40 -> 20-25
+    _62ms = 2,  // 110 -> 60
 };
 
 struct TouchSettings {
-    // More cycles more accurate, and more power
-    // More often checks, also more power
-    MeasureCycles mCycles[2] = {_31ms, _31ms};
-    MeasureRate mRate[2] = {_250ms, _2s};
+  // More cycles more accurate, and more power
+  // More often checks, also more power
+  MeasureCycles mCycles[2] = {_31ms, _31ms};
+  MeasureRate mRate[2] = {_500ms, _1s};
+  bool mHaptic {false};
+  int8_t mSensitivity {50};
 
-  #if(HW_VERSION < 10)
-    std::array<uint8_t, 4> mThresholds{{30, 30, 30, 30}};
-  #else
-    std::array<int, 4> mThresholds{{1000, 1000, 1000, 1000}};
-  #endif
-    std::array<uint8_t, 4> mMap{{0,1,2,3}};
+#if(HW_VERSION < 10)
+  //std::array<std::array<uint8_t, 2>, 4> mThresholds{{{{45,30}}, {{45,30}}, {{45,30}}, {{45,30}}}};
+  // std::array<uint16_t, 4> mThresholds{{100, 100, 50, 100}};
+#else
+  // std::array<int, 4> mThresholds{{1000, 1000, 1000, 1000}};
+#endif
+  std::array<uint8_t, 4> mMap{{0,1,2,3}};
 
-    bool mSetup : 1 {false};
-    bool mSetupMode : 1 {false};
+  struct Setup {
+    bool mMode : 1 {false};
+    bool mPower : 1 {false};
+    auto operator<=>(const Setup&) const = default;
+  };
+  std::optional<Setup> mSetup{};
 };
 
 class Touch {
 private:
     TouchSettings& mSettings;
 public:
-    explicit Touch(TouchSettings& settings) : mSettings{settings} {};
+    explicit Touch(TouchSettings& settings);
 
+    void initialize();
     void setUp(bool onlyMenuLight);
 
     enum Btn {
@@ -55,6 +63,7 @@ public:
         // Alias
         LIGHT = BACK,
     };
+    std::vector<uint16_t> readAll() const;
     Btn read() const;
     void clear() const;
     Btn readAndClear() const;

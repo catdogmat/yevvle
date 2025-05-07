@@ -31,8 +31,9 @@
 RTC_DATA_ATTR DeepSleepState kDSState;
 
 void RTC_IRAM_ATTR turnOffGpio() {
+  using B = HW::Spi;
   using D = HW::Display;
-  for (auto& pin : std::array{D::Cs, D::Dc, D::Res, D::Mosi, D::Sck}) {
+  for (auto& pin : std::array{D::Cs, D::Dc, D::Res, B::Mosi, B::Sck}) {
     GPIO_DIS_OUTPUT(pin);
   }
 #if (HW_VERSION < 10)
@@ -75,10 +76,6 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
   // This sets up the delay to work properly
 #if(HW_VERSION < 10)
   auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
-  ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
-#else
-  // Needed?
-  // ets_update_cpu_frequency(ets_get_xtal_freq() / 1'000'000);
 #endif
 
   const auto wakeupCause = esp_wake_stub_get_wakeup_cause();
@@ -139,11 +136,12 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
 
     // If it is the current set light pad button
     if ((mask >> kDSState.lightPad) & 1){
-      touch_ll_clear_trigger_status_mask(); // This will consume the touch
-
       // LED is powered from VDD, and we need to rise it to 3.3V,
       // because 1.9V is too low for the LED to light up
       Light::toggle();
+
+      // esp_rom_delay_us(1000); // Small delay to avoid the evet to be too quick for the HW
+      touch_ll_clear_trigger_status_mask(); // This will consume the touch
 
       // Go back to sleep, don´t touch the timer, if the user enters menu, then light will stay on
       esp_wake_stub_sleep(&wake_stub_deepsleep);

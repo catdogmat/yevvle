@@ -12,9 +12,6 @@
 
 #include "watchface_default.h"
 
-#include "driver/gpio.h"
-#include "driver/rtc_io.h"
-
 RTC_DATA_ATTR Settings kSettings;
 
 Core::Core()
@@ -35,16 +32,6 @@ Core::Core()
         // ESP_LOGE("", "%d input", i);
         pinMode(i, INPUT);
     }
-#else
-    // Set all GPIOs to input that we are not using to avoid leaking power
-    // This is NEEDED ?
-    // const uint64_t ignore = 0b111111111110000000000000000000010001; // Ignore some GPIOs due to resets
-    // for (int i = 0; i < GPIO_NUM_MAX; i++) {
-    //     if ((ignore >> i) & 0b1)
-    //         continue;
-    //     // ESP_LOGE("", "%d input", i);
-    //     pinMode(i, INPUT);
-    // }
 #endif
 
     // Recover Settings from Disk // TODO
@@ -55,41 +42,28 @@ Core::Core()
     // Select default voltage 2.6V
     Power::low();
     Light::off();
-
-    // First boot, try to get GPS location, to setup time/location
-    if constexpr (HW::kHasGps) {
-        mGps.on();
-        while (!mGps.mData.mDateTime || !mGps.mData.mLocation) {
-            ESP_LOGE("GPS", "waiting GPS");
-            if (!mGps.read())
-                break;
-        }
-        if (mGps.mData.mDateTime)
-            mTime.setTime(*mGps.mData.mDateTime, true);
-        mGps.off();
-    } else {
-        // HACK: Set a fixed time to start with
-        struct timeval tv{.tv_sec=1743371529, .tv_usec=0};
-        // struct timezone tz{.tz_minuteswest=60, .tz_dsttime=1};
-        mTime.setTime(tv);
-    }
-
+    
     // reset calibration to the ESP32
     mTime.calReset();
 
     return true;
 }()}
+, mSpi{}
 , mDisplay{}
 , mBattery{kSettings.mBattery}
 , mTouch{kSettings.mTouch}
 , mNow{mTime.getElements()}
 , mUi{createMainMenu()}
 {
-    ESP_LOGE("boot","");
+    // ESP_LOGE("boot","");
     // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
+        if (kSettings.mTouch.mHaptic)
+            mTasks.emplace_back(std::async(std::launch::async, []{
+                Peripherals::vibrator(std::vector<int>{25});
+            }));
         handleTouch();
     } break;
     case ESP_SLEEP_WAKEUP_TIMER: // Internal Timer
@@ -99,9 +73,41 @@ Core::Core()
         }
         kSettings.mTouchWatchDog = true;
         break;
-    case ESP_SLEEP_WAKEUP_EXT0: // Used for LoRa reception
-    default:
+    case ESP_SLEEP_WAKEUP_EXT1: // Used for LoRa reception
+        // ESP_LOGE("lora", "wakeup");
+        mLora.receive();
+        break;
+    case ESP_SLEEP_WAKEUP_EXT0: // Used for display busy wakeup
+        ESP_LOGE("ext", "wakeup"); // Should never be hit
+        break;
+    default: // First time boot!
         ESP_LOGE("", "boot %lu unkown wakeup reason %d", micros(), wakeup_reason);
+        // First boot, try to get GPS location, to setup time/location
+        if constexpr (HW::kHasGps) {
+            mGps.on();
+            // Try acquire GPS for 30s
+            mDisplay.println("Waiting for GPS 30s");
+            mDisplay.writeAllAndRefresh();
+            auto deadline = millis() + 10'000;
+            while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
+                if (!mGps.read())
+                    break;
+            }
+            if (auto datetime = mGps.mData.mDateTime) {
+                mTime.setTime(datetime->mElements, true);
+                // Roughtly adjust the centiseconds
+                mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
+            }
+            mGps.off();
+        } else {
+            // HACK: Set a fixed time/location to start with
+            tmElements_t time{.Second=0, .Minute=30, .Hour=14, .Wday=0, .Day=5, .Month=6, .Year=2025-1970};
+            mTime.getMinutesWest() = 60;
+            mTime.setTime(time);
+            mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
+        }
+        // Start up the lora module listening ?
+        mLora.startReceive();
         break;
     }
 
@@ -162,11 +168,10 @@ Core::Core()
         }, findUi());
     }
 
-    // Finish display, setup touch and finish pending tasks
+    // Finish display & pending tasks, then setup touch
     mDisplay.hibernate();
-    mTouch.setUp(kSettings.mUi.mDepth < 0);
     mTasks.clear();
-    mTouch.clear(); // Clear it again in case the tasks took too long
+    mTouch.setUp(kSettings.mUi.mDepth < 0);
 
     // Calculate stepsize based on battery level or on battery save mode
     auto stepSize = [&] {
@@ -194,6 +199,9 @@ Core::Core()
         firstMinutesSleep -= nextPartialWake - nextFullWake;
 
     // ESP_LOGE("", "nextFullWake %d firstMinutesSleep %d nextPartialWake %d", nextFullWake, firstMinutesSleep, nextPartialWake);
+    if constexpr (HW::kHasLora) {
+        esp_sleep_enable_ext1_wakeup(1ULL << HW::Lora::Dio1, ESP_EXT1_WAKEUP_ANY_HIGH);
+    }
 
     // We can only run wakeupstub when on watchface mode
     if (kSettings.mUi.mDepth < 0) {
@@ -247,7 +255,7 @@ void Core::handleTouch() {
     ESP_LOGE("parsed", "%d, %s", btn, std::string(magic_enum::enum_name(btn)).c_str());
 
     auto& ui = kSettings.mUi;
-    // ESP_LOGE("ui", "depth%d st%d", ui.mDepth, ui.mState[ui.mDepth]);
+    ESP_LOGE("ui", "depth%d st%d", ui.mDepth, ui.mState[ui.mDepth]);
 
     // Button press on the watchface
     if (ui.mDepth < 0) {

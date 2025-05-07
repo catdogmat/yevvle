@@ -167,6 +167,23 @@ std::vector<Rect> DefaultWatchface::render() {
     rects.emplace_back(75, 102, 45, 14);
   }
 
+  // Lora!
+  if (auto& pck = mCore.mLora.mPck) {
+    // Draw a white box
+    mDisplay.writeFillRect(20, 90, 160, 70, 0);
+    mDisplay.drawRect(22, 91, 158, 68, 1);
+    mDisplay.setFont(NULL);
+    mDisplay.setCursor(27, 98);
+    mDisplay.printf("Message: %s\n", pck->mData.c_str());
+    mDisplay.setCursor(27, mDisplay.getCursorY());
+    mDisplay.printf("SNR: %f\n", pck->mSNR);
+    mDisplay.setCursor(27, mDisplay.getCursorY());
+    mDisplay.printf("RSSI: %f\n", pck->mRSSI);
+    mDisplay.setCursor(27, mDisplay.getCursorY());
+    mDisplay.printf("Freq: %f\n", pck->mFreqError);
+    rects.emplace_back(20, 90, 160, 70);
+  }
+
   return rects;
 }
 

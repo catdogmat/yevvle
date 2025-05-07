@@ -51,4 +51,5 @@ public:
 
     const timeval& getTimeval() const { return mTv; }
     const tmElements_t& getElements() const { return mElements; }
+    int16_t& getMinutesWest() const { return mSettings.mMinutesWest; }
 };

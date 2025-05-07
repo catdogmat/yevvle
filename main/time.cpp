@@ -8,7 +8,7 @@
 void Time::readTime() {
     gettimeofday(&mTv, NULL);
     // Apply timezone manually only to Elements
-    breakTime(mTv.tv_sec + mSettings.mMinutesWest * 60, mElements);
+    breakTime(mTv.tv_sec + getMinutesWest() * 60, mElements);
 }
 
 void Time::adjustTime(const timeval& time) {
@@ -20,6 +20,7 @@ void Time::adjustTime(const timeval& time) {
 
 void Time::adjustTime(const int32_t& seconds) {
     struct timeval time{seconds, 0};
+    // ESP_LOGE("adjust", "%ld", seconds);
     adjustTime(time);
 }
 

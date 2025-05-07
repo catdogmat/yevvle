@@ -27,7 +27,9 @@ static RTC_DATA_ATTR struct DisplayState {
 
 int RTC_IRAM_ATTR getSetDisplayMode() { return kState.mode; };
 
-const SPISettings Display::_spi_settings{kOverdriveSPI ? 26'666'666 : 20'000'000, MSBFIRST, SPI_MODE0};
+namespace {
+  const SPISettings kSpiSettings{Display::kOverdriveSPI ? 26'666'666 : 20'000'000, MSBFIRST, SPI_MODE0};
+}
 
 SemaphoreHandle_t sSem = NULL;
 void isr(void* ) {
@@ -38,14 +40,12 @@ void isr(void* ) {
 
 void Display::_startTransfer()
 {
-  SPI.beginTransaction(_spi_settings);
-  if (!kCsHw)
-    gpio_set_level((gpio_num_t)HW::Display::Cs, LOW);
+  SPI.beginTransaction(kSpiSettings);
+  gpio_set_level((gpio_num_t)HW::Display::Cs, LOW);
 }
 void Display::_endTransfer()
 {
-  if (!kCsHw)
-    gpio_set_level((gpio_num_t)HW::Display::Cs, HIGH);
+  gpio_set_level((gpio_num_t)HW::Display::Cs, HIGH);
   SPI.endTransaction();
 }
 
@@ -68,14 +68,12 @@ void Display::_transferCommand(uint8_t c)
 
 Display::Display() : Adafruit_GFX(WIDTH, HEIGHT) {
   // Set pins
-  if (!kCsHw)
-    pinMode(HW::Display::Cs, OUTPUT);
+  pinMode(HW::Display::Cs, OUTPUT);
   pinMode(HW::Display::Dc, OUTPUT);
   pinMode(HW::Display::Res, OUTPUT);
   pinMode(HW::Display::Busy, INPUT);
 
-  if (!kCsHw)
-    digitalWrite(HW::Display::Cs, HIGH);
+  digitalWrite(HW::Display::Cs, HIGH);
   digitalWrite(HW::Display::Dc, HIGH);
   digitalWrite(HW::Display::Res, HIGH);
   
@@ -88,10 +86,6 @@ Display::Display() : Adafruit_GFX(WIDTH, HEIGHT) {
   //pinMode(HW::Display::Res, INPUT_PULLUP);
   if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Display::Res))
     rtc_gpio_hold_en((gpio_num_t)HW::Display::Res);
-
-  SPI.begin(HW::Display::Sck, -1, HW::Display::Mosi, kCsHw ? HW::Display::Cs : -1);
-  if constexpr (kCsHw)
-    SPI.setHwCs(true);
 
   // Display requires ISR service for busy pin
   gpio_intr_disable((gpio_num_t)HW::Display::Busy);

@@ -11,6 +11,7 @@ set(requires
     Time
     magic_enum
     sunset
+    radioLib
 )
 
 set(privrequires

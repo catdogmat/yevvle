@@ -13,8 +13,12 @@ public:
       double mLat;
       double mLon;
     };
+    struct DateTime {
+      tmElements_t mElements;
+      uint8_t mCentiSeconds;
+    };
     std::optional<Location> mLocation;
-    std::optional<tmElements_t> mDateTime;
+    std::optional<DateTime> mDateTime;
     std::optional<float> mSpeed;
     std::optional<float> mDirection;
   } mData;

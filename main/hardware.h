@@ -29,20 +29,30 @@ struct HW_1 {
         constexpr static std::array<uint8_t, 4> Pad = {{6,0,2,5}};
     };
 
+    struct Spi {
+        constexpr static uint8_t Sck = 18;
+        constexpr static uint8_t Miso = -1; 
+        constexpr static uint8_t Mosi = 23;
+    };
+
     struct Display {
         constexpr static uint8_t Cs = 5;
         constexpr static uint8_t Res = 9;
-        constexpr static uint8_t Dc = 10;
-        constexpr static uint8_t Sck = 18;
+        constexpr static uint8_t Dc = 10; // 8 bit transfer mode
         constexpr static uint8_t Busy = 19; // 35 better, never manufactured
-        constexpr static uint8_t Mosi = 23;
     };
-    // TODO: DUMMY remove me
+    
     struct Gps {
-        constexpr static uint8_t Tx = 0;
-        constexpr static uint8_t Rx = 0;
-        constexpr static uint8_t Vcc = 0;
+        // constexpr static uint8_t Tx = -1;
+        constexpr static uint8_t Rx = -1;
+        constexpr static uint8_t Vcc = -1; // RTC reqired
         constexpr static auto BaudRate = 115200;
+    };
+    struct Lora {
+        constexpr static uint8_t Cs = -1; // RTC reqired
+        constexpr static uint8_t Res = -1;
+        constexpr static uint8_t Busy = -1; // Input only pin
+        constexpr static uint8_t Dio1 = -1; // IRQ // Input only pin
     };
 
     constexpr static uint8_t kAdcPin = 34;
@@ -61,44 +71,42 @@ struct HW_1 {
 struct HW_2 : public HW_1 {
     constexpr static uint8_t kVersion = 2;
     constexpr static bool kVoltageSelectInverted = true;
+
+    // constexpr static bool kHasLowVoltage = false;
 };
 
 // Added Lora/GPS to PICOD4, reshuffle pins
+// Use as much as possible INPUT ONLY pins 34-39
 struct HW_3 : public HW_2 {
     constexpr static uint8_t kVersion = 3;
-    constexpr static bool kHasLowVoltage = true;
     constexpr static bool kHasLora = true;
     constexpr static bool kHasGps = true;
     constexpr static bool kHasDisplayBusyWake = true;
 
-
-    // Use as much as possible INPUT ONLY pins 34-39
-    struct Display {
-        constexpr static uint8_t Cs = 5;
-        constexpr static uint8_t Res = 9;
-        constexpr static uint8_t Dc = 10;
+    struct Spi {
         constexpr static uint8_t Sck = 18;
-        constexpr static uint8_t Busy = 35; // Input only pin
+        constexpr static uint8_t Miso = 38; 
         constexpr static uint8_t Mosi = 23;
     };
 
+    struct Display {
+        constexpr static uint8_t Cs = 5;
+        constexpr static uint8_t Res = 9;
+        constexpr static uint8_t Dc = 10; // Could be 9 bit transfer and avoid this pin
+        constexpr static uint8_t Busy = 35; // RTC required // Input only pin
+    };
+
     struct Lora {
-        //constexpr static uint8_t Cs = ?;
+        //constexpr static uint8_t Cs = ?; // RTC reqired
         //constexpr static uint8_t Res = ?;
-        constexpr static uint8_t Dc = Display::Dc; // Shared
-        constexpr static uint8_t Sck = Display::Sck; // Shared
         constexpr static uint8_t Busy = 37; // Input only pin
-        constexpr static uint8_t Mosi = Display::Mosi; // Shared
-        constexpr static uint8_t Miso = 38; // Input only pin
-        constexpr static uint8_t Dio1 = 36; // IRQ? // Input only pin
-        constexpr static uint8_t Dio2 = 32;
-        //constexpr static uint8_t Vcc = ?; // Can it share with RES?
+        constexpr static uint8_t Dio1 = 36; // IRQ // Input only pin
     };
 
     struct Gps {
-        //constexpr static uint8_t Tx = ??;
+        //constexpr static uint8_t Tx = ??; // Not need to TX to the GPS
         constexpr static uint8_t Rx = 39; // Input only pin
-        //constexpr static uint8_t Vcc = ??;
+        //constexpr static uint8_t Vcc = ??; // RTC required
     };
 
 };
@@ -120,30 +128,35 @@ struct HW_10 {
         constexpr static std::array<uint8_t, 4> Pad = {{1,4,8,6}};
     };
 
-    struct Display {
-        constexpr static uint8_t Cs = 20;
-        constexpr static uint8_t Res = 10; // NOT ALLOWED 22
-        constexpr static uint8_t Dc = 21;
+    struct Spi {
         constexpr static uint8_t Sck = 19;
-        constexpr static uint8_t Busy = 7;
+        constexpr static uint8_t Miso = 34; //DIO1 // 17;
         constexpr static uint8_t Mosi = 18;
     };
 
+    struct Display {
+        constexpr static uint8_t Cs = 20;
+        constexpr static uint8_t Res = 10; // NOT ALLOWED 22
+        constexpr static uint8_t Dc = 21; // Could be 9 bit transfer
+        constexpr static uint8_t Busy = 7;
+    };
+
     struct Lora {
-        constexpr static uint8_t Cs = 35;
-        //constexpr static uint8_t Res = ?;
-        constexpr static uint8_t Dc = Display::Dc; // Shared
-        constexpr static uint8_t Sck = Display::Sck; // Shared
-        constexpr static uint8_t Busy = 36; // Input only pin
-        constexpr static uint8_t Mosi = Display::Mosi; // Shared
-        constexpr static uint8_t Miso = 17; // Input only pin
-        constexpr static uint8_t Dio1 = 34; // IRQ? // Input only pin
-        constexpr static uint8_t Dio2 = 33;
-        //constexpr static uint8_t Vcc = ?; // Can it share with RES?
+        // constexpr static uint8_t Cs = 35; // PULL UP REQUIRED
+        // TEMPORARY TEST
+        constexpr static uint8_t Cs = 2; // PULL UP REQUIRED
+        
+
+        constexpr static uint8_t Res = 38; //13;
+        constexpr static uint8_t Busy = 36;
+        constexpr static uint8_t Dio1 = 17; // MISO // 34; // IRQ?
+        
+        // constexpr static uint8_t Dio2 = 33; // Needed? NO
+        //constexpr static uint8_t Vcc = ?; // Can it share with RES? 0.3uA/3.3V, not needed!
     };
 
     struct Gps {
-        constexpr static uint8_t Tx = 38;
+        constexpr static uint8_t Tx = 38;  // Not need to TX to the GPS
         constexpr static uint8_t Rx = 37;
         constexpr static uint8_t Vcc = 11;
         constexpr static auto BaudRate = 115200;
