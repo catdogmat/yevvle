@@ -6,8 +6,8 @@
 #include "esp32-hal-log.h"
 
 namespace {
-  RTC_DATA_ATTR bool kPrev{false};
-  RTC_DATA_ATTR std::atomic<int> kLock{0};
+  RTC_SLOW_ATTR bool kPrev{false};
+  RTC_SLOW_ATTR std::atomic<int> kLock{0};
 } // namespace
 
 #include "soc/rtc_periph.h"
@@ -15,15 +15,25 @@ namespace {
 #include "deep_sleep_utils.h"
 
 void Power::lock() {
+  // std::lock_guard<std::mutex> guard(kMutex);
+  // ESP_LOGE("power", "lock -> %d", kLock.load());
   if (kLock.fetch_add(1, std::memory_order_acq_rel) == 0) {
     high();
   }
+  // if (kCounter++ == 0) {
+  //   high();
+  // }
 }
 
 void Power::unlock() {
+  // std::lock_guard<std::mutex> guard(kMutex);
+  // ESP_LOGE("power", "unlock -> %d", kLock.load());
   if (kLock.fetch_sub(1, std::memory_order_acq_rel) == 1) {
     low();
   }
+  // if (kCounter-- == 1) {
+  //   low();
+  // }
 }
 
 bool Power::current() {
@@ -31,7 +41,7 @@ bool Power::current() {
 }
 
 // Need to store this in RTC memory since will not be available in DeepSleep
-const RTC_DATA_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
+const RTC_SLOW_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kVoltageSelectPin]];
 
 void Power::set(bool high) {
   // Could be that the board only supports a given high voltage

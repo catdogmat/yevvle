@@ -9,7 +9,7 @@
 #include "Arduino.h"
 
 namespace {
-  RTC_DATA_ATTR bool kPrev{false};
+  RTC_SLOW_ATTR bool kPrev{false};
 } // namespace
 
 #include "soc/rtc_periph.h"
@@ -28,7 +28,7 @@ bool Light::toggle() {
 }
 
 // Need to store this in RTC memory since will not be available in DeepSleep
-const RTC_DATA_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kLightPin]];
+const RTC_SLOW_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kLightPin]];
 
 void Light::set(bool high) {
   // Caches previous values
