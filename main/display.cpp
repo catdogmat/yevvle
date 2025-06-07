@@ -90,8 +90,6 @@ Display::Display() : Adafruit_GFX(WIDTH, HEIGHT) {
   // Display requires ISR service for busy pin
   gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);
-  gpio_isr_handler_add((gpio_num_t)HW::Display::Busy, isr, (void*) 0);
-
   init();
 }
 
@@ -301,11 +299,13 @@ void Display::waitWhileBusy() {
   // Set the wakeup on busy, in case tasks sleep the chip as well
   gpio_wakeup_enable((gpio_num_t)HW::Display::Busy, GPIO_INTR_LOW_LEVEL);
   esp_sleep_enable_gpio_wakeup();
+  gpio_isr_handler_add((gpio_num_t)HW::Display::Busy, isr, (void*) 0);
 
   if (xSemaphoreTake(sSem, 10'000 / portTICK_PERIOD_MS) != pdTRUE) {
     ESP_LOGE("displ", "semaphore expired!");
   }
 
+  gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
   gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_wakeup_disable((gpio_num_t)HW::Display::Busy);
 
