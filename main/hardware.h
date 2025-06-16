@@ -7,7 +7,7 @@
 #if CONFIG_IDF_TARGET_ESP32S3
 #define HW_VERSION 10 // First WIP board
 #else
-#define HW_VERSION 2 // Last board fully working
+#define HW_VERSION 3 // Last board fully working
 #endif
 
 enum class HW_chips {ESP_32, ESP_32_S3};
@@ -71,8 +71,6 @@ struct HW_1 {
 struct HW_2 : public HW_1 {
     constexpr static uint8_t kVersion = 2;
     constexpr static bool kVoltageSelectInverted = true;
-
-    // constexpr static bool kHasLowVoltage = false;
 };
 
 // Added Lora/GPS to PICOD4, reshuffle pins
@@ -84,31 +82,37 @@ struct HW_3 : public HW_2 {
     constexpr static bool kHasDisplayBusyWake = true;
 
     struct Spi {
-        constexpr static uint8_t Sck = 18;
+        constexpr static uint8_t Sck = 10;
         constexpr static uint8_t Miso = 38; 
-        constexpr static uint8_t Mosi = 23;
+        constexpr static uint8_t Mosi = 9;
     };
 
     struct Display {
         constexpr static uint8_t Cs = 5;
-        constexpr static uint8_t Res = 9;
-        constexpr static uint8_t Dc = 10; // Could be 9 bit transfer and avoid this pin
+        constexpr static uint8_t Res = 23;
+        constexpr static uint8_t Dc = 18; // Could be 9 bit transfer and avoid this pin
         constexpr static uint8_t Busy = 35; // RTC required // Input only pin
     };
 
     struct Lora {
-        //constexpr static uint8_t Cs = ?; // RTC reqired
-        //constexpr static uint8_t Res = ?;
+        constexpr static uint8_t Cs = 32; // RTC reqired
+        constexpr static uint8_t Res = 19;
         constexpr static uint8_t Busy = 37; // Input only pin
         constexpr static uint8_t Dio1 = 36; // IRQ // Input only pin
     };
 
     struct Gps {
-        //constexpr static uint8_t Tx = ??; // Not need to TX to the GPS
+        // constexpr static uint8_t Tx = ??; // Not need to TX to the GPS
         constexpr static uint8_t Rx = 39; // Input only pin
-        //constexpr static uint8_t Vcc = ??; // RTC required
+        constexpr static uint8_t Vcc = 27; // RTC required
+        constexpr static auto BaudRate = 115200;
     };
 
+    constexpr static uint8_t kAdcPin = 34;
+    constexpr static uint8_t kLightPin = 25;
+    constexpr static uint8_t kSpeakerPin = 22;
+    constexpr static uint8_t kVibratorPin = 26;
+    constexpr static uint8_t kVoltageSelectPin = 13;
 };
 
 

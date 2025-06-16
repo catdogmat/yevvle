@@ -41,7 +41,13 @@ namespace uSpi {
     dev.pin.val = dev.pin.val & ~((1 << 0) & SPI_SS_MASK_ALL);
 
     // pinMode(HW::Display::Dc, OUTPUT);
-    GPIO_MODE_OUTPUT(10);
+    #if (HW_VERSION == 3)
+      GPIO_MODE_OUTPUT(18);
+      GPIO_MODE_OUTPUT(9); // NEEDED FOR HW_V3
+      GPIO_MODE_OUTPUT(10); // NEEDED FOR HW_V3
+    #else
+      GPIO_MODE_OUTPUT(10);
+    #endif
     // TODO: Make it using the variable HW::Display::Dc
 #else
     dev.clk_gate.clk_en = 1;

@@ -14,12 +14,17 @@ Lora::Lora() {
   if constexpr (!HW::kHasLora) {
     return;
   }
+  // if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Lora::Dio1))
+  //    rtc_gpio_pulldown_en((gpio_num_t)HW::Lora::Dio1);
+  // if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Lora::Busy))
+  //    rtc_gpio_pullup_en((gpio_num_t)HW::Lora::Busy);
   if (!kRadio) {
     // ESP_LOGE("lora", "initialize");
     // Construct the RadioLib objects just once in RTC mem
     kSpi.emplace(2'000'000, MSBFIRST, SPI_MODE0);
     kHal.emplace(SPI, *kSpi);
     kModule.emplace(&kHal.value(), HW::Lora::Cs, HW::Lora::Dio1, HW::Lora::Res, HW::Lora::Busy);
+    return; // FIX ME, if the module is not present should not crash the chip
     kRadio.emplace(&kModule.value());
     // kRadio.XTAL = false;
     // kRadio.standbyXOSC = false;

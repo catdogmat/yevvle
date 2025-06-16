@@ -28,13 +28,6 @@ struct TouchSettings {
   MeasureRate mRate[2] = {_500ms, _1s};
   bool mHaptic {false};
   int8_t mSensitivity {50};
-
-#if(HW_VERSION < 10)
-  //std::array<std::array<uint8_t, 2>, 4> mThresholds{{{{45,30}}, {{45,30}}, {{45,30}}, {{45,30}}}};
-  // std::array<uint16_t, 4> mThresholds{{100, 100, 50, 100}};
-#else
-  // std::array<int, 4> mThresholds{{1000, 1000, 1000, 1000}};
-#endif
   std::array<uint8_t, 4> mMap{{0,1,2,3}};
 
   struct Setup {

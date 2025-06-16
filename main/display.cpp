@@ -308,6 +308,7 @@ void Display::waitWhileBusy() {
   gpio_isr_handler_remove((gpio_num_t)HW::Display::Busy);
   gpio_intr_disable((gpio_num_t)HW::Display::Busy);
   gpio_wakeup_disable((gpio_num_t)HW::Display::Busy);
+  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO);
 
   vSemaphoreDelete(sSem);
 }

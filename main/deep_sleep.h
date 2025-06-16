@@ -3,17 +3,15 @@
 #include "display.h"
 
 struct DeepSleepState {
-#if(HW_VERSION < 10)
   // This is needed because the HW pin is not properly wired to a RTC GPIO
-  struct BusyWait {
+  [[no_unique_address]] struct BusyWait {
     constexpr static auto kStartWait = 25'000u; // Super low value to start with
     constexpr static auto kReduce = 500u;
     constexpr static auto kWaitStep = 100u;
 
     uint32_t currentWait {kStartWait};
     uint8_t missedTimes {0};
-  } busyWait[magic_enum::enum_count<DisplayMode>()];
-#endif
+  } busyWait[magic_enum::enum_count<DisplayMode>() * !HW::kHasDisplayBusyWake];
 
   // Display minute update variables
   uint8_t currentMinutes {0};

@@ -49,7 +49,7 @@ void Light::set(bool high) {
 #if (HW_VERSION < 10)
   GPIO_MODE_OUTPUT(25);
 #else
-  // GPIO_MODE_OUTPUT(25);
+  GPIO_MODE_OUTPUT(12);
 #endif
   GPIO_OUTPUT_SET(HW::kLightPin, high);
 

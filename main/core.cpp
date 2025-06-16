@@ -74,11 +74,11 @@ Core::Core()
         kSettings.mTouchWatchDog = true;
         break;
     case ESP_SLEEP_WAKEUP_EXT1: // Used for LoRa reception
-        // ESP_LOGE("lora", "wakeup");
+        // ESP_LOGE("lora", "ext1 wakeup");
         mLora.receive();
         break;
     case ESP_SLEEP_WAKEUP_EXT0: // Used for display busy wakeup
-        ESP_LOGE("ext", "wakeup"); // Should never be hit
+        ESP_LOGE("ext0", "wakeup ?"); // Should never be hit
         break;
     default: // First time boot!
         ESP_LOGE("", "boot %lu unkown wakeup reason %d", micros(), wakeup_reason);
@@ -222,6 +222,9 @@ Core::Core()
         esp_set_deep_sleep_wake_stub(NULL);
         esp_sleep_enable_timer_wakeup(10'000'000);
     }
+
+    // Who is setting this to ON manually ?? Display + LightSleep?
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
 
     esp_deep_sleep_disable_rom_logging();
     esp_deep_sleep_start();
