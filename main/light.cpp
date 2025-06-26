@@ -46,11 +46,7 @@ void Light::set(bool high) {
   // Deep sleep hold disable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
 
-#if (HW_VERSION < 10)
-  GPIO_MODE_OUTPUT(25);
-#else
-  GPIO_MODE_OUTPUT(12);
-#endif
+  gpio_mode_output<HW::kLightPin>();
   GPIO_OUTPUT_SET(HW::kLightPin, high);
 
   // LED requires high power while it is on, locking it

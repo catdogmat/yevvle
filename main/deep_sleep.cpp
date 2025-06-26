@@ -36,12 +36,7 @@ void RTC_IRAM_ATTR turnOffGpio() {
   for (auto& pin : std::array{D::Cs, D::Dc, D::Res, B::Mosi, B::Sck}) {
     GPIO_DIS_OUTPUT(pin);
   }
-#if (HW_VERSION < 3)
-  GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
-  // NOTE: GPIO35 can only be input pin
-#else
-  GPIO_MODE_INPUT(7); // TODO: Make it using the variable HW::Display::Busy
-#endif
+  gpio_mode_input<HW::Display::Busy>();
 }
 
 void RTC_IRAM_ATTR feed_wdt() {
@@ -71,12 +66,22 @@ void RTC_IRAM_ATTR microSleep(uint32_t micros) {
   feed_wdt();
 }
 
+void RTC_IRAM_ATTR advanceMinutes(uint32_t minus) {
+  // Guess the amount to sleep until next one and advance counters
+  kDSState.currentMinutes += kDSState.stepSize;
+  kDSState.minutes -= kDSState.stepSize;
+  auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
+  esp_wake_stub_set_wakeup_time(minutes * 60'000'000 - minus);
+}
+
 // wake up stub function stored in RTC memory
 void RTC_IRAM_ATTR wake_stub_deepsleep(void)
 {
   // This sets up the delay to work properly
   auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
+#if (HW_VERSION < 10)
   ets_update_cpu_frequency_rom(ets_get_detected_xtal_freq() / 1'000'000);
+#endif
 
   const auto wakeupCause = esp_wake_stub_get_wakeup_cause();
   
@@ -91,7 +96,7 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
     // Wait until display busy goes off (this will not be needed in next HW version
     if constexpr (!HW::kHasDisplayBusyWake) {
       auto& busyWait = kDSState.busyWait[getSetDisplayMode()];
-      GPIO_MODE_INPUT(19); // TODO: Make it using the variable HW::Display::Busy
+      gpio_mode_input<HW::Display::Busy>();
       while(GPIO_INPUT_GET(HW::Display::Busy) != 0) {
         microSleep(busyWait.kWaitStep);
         busyWait.currentWait += busyWait.kWaitStep;
@@ -108,16 +113,12 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
       uSpi::writeArea(dec.data + dec.coord.size()*kSettings.mWatchface.mLastDraw.mMinuteD, dec.coord.x, dec.coord.y, dec.coord.w, dec.coord.h);
     }
 
-    // Set display to sleep and go to sleep
+    // Set display to sleep and then we turn off the GPIOs / advance minutes and go to sleep as well
     uSpi::hibernate();
     turnOffGpio();
 
     if constexpr (!HW::kHasDisplayBusyWake) {
-      // Guess the amount to sleep until next one and advance counters
-      kDSState.currentMinutes += kDSState.stepSize;
-      kDSState.minutes -= kDSState.stepSize;
-      auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
-      esp_wake_stub_set_wakeup_time(minutes * 60'000'000 - busyWait.currentWait);
+      advanceMinutes(busyWait.currentWait);
     }
 
     // Set stub entry, then going to deep sleep again.
@@ -164,20 +165,12 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
   Light::off();
 
   // Reset display to wake it up
-#if (HW_VERSION < 3)
-  GPIO_MODE_OUTPUT(9); // TODO: Make it using the variable HW::Display::Res
-#elif (HW_VERSION < 10)
-  GPIO_MODE_OUTPUT(23); // TODO: Make it using the variable HW::Display::Res
-#else
+#if (HW_VERSION >= 10)
   CLEAR_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
-  GPIO_MODE_OUTPUT(10); // TODO: Make it using the variable HW::Display::Res
 #endif
+  gpio_mode_output<HW::Display::Res>();
   GPIO_OUTPUT_SET(HW::Display::Res, 0);
-#if (HW_VERSION < 10)
-  esp_rom_delay_us(1'000);
-#else
-  esp_rom_delay_us(500); // HW 10 suspiciusly is 2X this time ?
-#endif
+  esp_rom_delay_us(1'000); // HW 10 suspiciusly is 2X this time ? CHECK!
   GPIO_OUTPUT_SET(HW::Display::Res, 1);
 #if (HW_VERSION >= 10)
   SET_PERI_REG_MASK(RTC_CNTL_PAD_HOLD_REG, descRes.hold_force);
@@ -211,10 +204,7 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
   if constexpr (HW::kHasDisplayBusyWake) {
     // Just need to go back to sleep the correct amount
     // The display hibernation will happen without affecting the timer
-    kDSState.currentMinutes += kDSState.stepSize;
-    kDSState.minutes -= kDSState.stepSize;
-    auto minutes = kDSState.stepSize + (kDSState.minutes < 0 ? kDSState.minutes : 0);
-    esp_wake_stub_set_wakeup_time(minutes * 60'000'000);
+    advanceMinutes(0);
   } else {
     // Set wakeup timer when we guess display will finish refreshing, to put display to hibernation
     esp_wake_stub_set_wakeup_time(busyWait.currentWait);

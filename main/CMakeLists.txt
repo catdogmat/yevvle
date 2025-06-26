@@ -35,6 +35,7 @@ set(srcs
     watchface_default.cpp
 
     deep_sleep.cpp
+    deep_sleep_utils.cpp
 
     # WIP stuff
     # ble.cpp

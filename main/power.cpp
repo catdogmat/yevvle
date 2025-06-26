@@ -67,11 +67,7 @@ void Power::set(bool high) {
   // Deep sleep hold disable
   CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
 
-#if (HW_VERSION < 10)
-  GPIO_MODE_OUTPUT(13);
-#else
-  GPIO_MODE_OUTPUT(5);
-#endif
+  gpio_mode_output<HW::kVoltageSelectPin>();
   GPIO_OUTPUT_SET(HW::kVoltageSelectPin, high);
 
   // Hold enable

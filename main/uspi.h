@@ -34,21 +34,15 @@ namespace uSpi {
     dev.ctrl.wr_bit_order = 0; //MSBFIRST
     dev.ctrl.rd_bit_order = 0;
 
+    gpio_mode_output<HW::Display::Dc>();
+    gpio_mode_output<HW::Spi::Sck>(); // NEEDED FOR HW_V3
+    gpio_mode_output<HW::Spi::Mosi>(); // NEEDED FOR HW_V3
+
 #if (HW_VERSION < 10)
     gpio_matrix_out(HW::Spi::Sck, VSPICLK_OUT_IDX, false, false);
     gpio_matrix_out(HW::Spi::Mosi, VSPID_IN_IDX, false, false);
     gpio_matrix_out(HW::Display::Cs, VSPICS0_OUT_IDX, false, false);
     dev.pin.val = dev.pin.val & ~((1 << 0) & SPI_SS_MASK_ALL);
-
-    // pinMode(HW::Display::Dc, OUTPUT);
-    #if (HW_VERSION == 3)
-      GPIO_MODE_OUTPUT(18);
-      GPIO_MODE_OUTPUT(9); // NEEDED FOR HW_V3
-      GPIO_MODE_OUTPUT(10); // NEEDED FOR HW_V3
-    #else
-      GPIO_MODE_OUTPUT(10);
-    #endif
-    // TODO: Make it using the variable HW::Display::Dc
 #else
     dev.clk_gate.clk_en = 1;
     dev.clk_gate.mst_clk_sel = 1;
@@ -72,10 +66,6 @@ namespace uSpi {
     // Update the HW
     dev.cmd.update = 1;
     while (dev.cmd.update);
-
-    // pinMode(HW::Display::Dc, OUTPUT);
-    GPIO_MODE_OUTPUT(5);
-    // TODO: Make it using the variable HW::Display::Dc
 #endif
   }
 
