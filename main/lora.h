@@ -26,4 +26,7 @@ public:
 
   bool send(const std::string& pck);
   void receive();
+
+  void sendClose();
+  void sendOpen();
 };

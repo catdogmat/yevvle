@@ -80,6 +80,18 @@ UI::Any Core::createMainMenu() {
       UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
       UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
     }},
+    UI::Menu{"Garage", {
+      UI::Action{"Up", [&]{
+        mTasks.emplace_back(std::async(std::launch::async, [&]{
+          mLora.sendOpen();
+        }));
+      }},
+      UI::Action{"Down", [&]{
+        mTasks.emplace_back(std::async(std::launch::async, [&]{
+          mLora.sendClose();
+        }));
+      }},
+    }},
     UI::Menu{"Test", {
       UI::Action{"Vib 2x75ms", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{

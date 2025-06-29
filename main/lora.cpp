@@ -10,6 +10,60 @@ namespace {
   RTC_DATA_ATTR std::optional<SX1262> kRadio;
 }
 
+std::vector<uint8_t> closeSeq = {0x88, 0x8e, 0xee, 0xee, 0x88, 0x8e, 0x88, 0xe8, 0x8e, 0x88, 0x8e, 0x88, 0x80};
+std::vector<uint8_t> openSeq  = {0x88, 0x8e, 0xee, 0xee, 0x88, 0x8e, 0x88, 0xe8, 0x8e, 0x88, 0xe8, 0x88, 0x80};
+
+class OOK {
+  uint32_t mBitUsDuration;
+  int8_t mMinPower, mMaxPower;
+
+public:
+  OOK(uint32_t bitUsDuration, float freq, int8_t minPower = -9, int8_t maxPower = 22)
+  : mBitUsDuration(bitUsDuration)
+  , mMinPower(minPower)
+  , mMaxPower(maxPower)
+  {
+    kRadio->XTAL = true; // Needed, aparently, why?
+    kRadio->beginFSK(freq);
+    kRadio->setFrequency(freq);
+    kRadio->transmitDirect();
+    kRadio->setOutputPower(mMinPower);  // Initially set to low
+  }
+  ~OOK() {
+    kRadio->standby();
+  }
+
+  void transmit(std::vector<uint8_t> seq){
+    RadioLibTime_t start = kHal->micros();
+    for (size_t byteIdx = 0; byteIdx < seq.size(); ++byteIdx) {
+      uint8_t byte = seq[byteIdx];
+      for (int bitIdx = 7; bitIdx >= 0; --bitIdx) {
+        bool bit = (byte >> bitIdx) & 0x01;
+        kRadio->setOutputPower(bit ? mMaxPower : mMinPower);
+        kModule->waitForMicroseconds(start, mBitUsDuration);
+        start += mBitUsDuration;
+      }
+    }
+    kRadio->setOutputPower(mMinPower);
+  }
+};
+
+void Lora::sendClose() {
+  ESP_LOGE("Send", "close");
+  auto ook = OOK(355, 433.98);
+  for(auto i=0; i<5; i++) {
+    ook.transmit(closeSeq);
+    delayMicroseconds(8130);
+  }
+}
+void Lora::sendOpen() {
+  ESP_LOGE("Send", "open");
+  auto ook = OOK(355, 433.98);
+  for(auto i=0; i<5; i++) {
+    ook.transmit(openSeq);
+    delayMicroseconds(8130);
+  }
+}
 Lora::Lora() {
   if constexpr (!HW::kHasLora) {
     return;
@@ -21,14 +75,14 @@ Lora::Lora() {
   if (!kRadio) {
     // ESP_LOGE("lora", "initialize");
     // Construct the RadioLib objects just once in RTC mem
-    kSpi.emplace(2'000'000, MSBFIRST, SPI_MODE0);
+    kSpi.emplace(20'000'000, MSBFIRST, SPI_MODE0);
     kHal.emplace(SPI, *kSpi);
     kModule.emplace(&kHal.value(), HW::Lora::Cs, HW::Lora::Dio1, HW::Lora::Res, HW::Lora::Busy);
     return; // FIX ME, if the module is not present should not crash the chip
     kRadio.emplace(&kModule.value());
     // kRadio.XTAL = false;
     // kRadio.standbyXOSC = false;
-    kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
+    // kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
     kRadio->sleep();
   }
 
