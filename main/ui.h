@@ -155,7 +155,12 @@ struct NumberRange : public Name {
 
     std::string name() const { return std::to_string(ref) + " " + baseName; }
     void button_updown(int v) const { 
-        ref = (ref - range.first + v + range.second) % (range.second - range.first); }
+        ref += v;
+        if (ref > range.second)
+            ref = range.first;
+        if (ref < range.first)
+            ref = range.second;
+    }
     void render(Display& d) const {
         renderHeader(d, baseName);
         d.println();
