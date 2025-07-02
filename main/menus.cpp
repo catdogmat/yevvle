@@ -86,11 +86,6 @@ UI::Any Core::createMainMenu() {
           Peripherals::vibrator(std::vector<int>{75,75,75});
         }));
       }},
-      // UI::Action{"Vib 1x75ms", [&]{
-      //   mTasks.emplace_back(std::async(std::launch::async, []{
-      //     Peripherals::vibrator(std::vector<int>{75});
-      //   }));
-      // }},
       UI::Action{"Vib 200ms", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
           Peripherals::vibrator(std::vector<int>{200});
@@ -145,11 +140,12 @@ UI::Any Core::createMainMenu() {
         }));
       }},
       UI::Action{"Display Restore", [&]{
-        mDisplay.setRefreshMode(DisplayMode::FULL);
+        mDisplay.setRefreshMode(DisplayMode::GOOD);
         bool inverted = false;
         while (true) {
           mDisplay.setInverted(inverted = !inverted);
-          mDisplay.writeAllAndRefresh();
+          for (int i=0; i<10; i++)
+            mDisplay.writeAllAndRefresh();
           if (mTouch.readAndClear() != Touch::Btn::NONE)
             break;
         }

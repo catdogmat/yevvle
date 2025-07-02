@@ -18,7 +18,7 @@
 enum DisplayMode {
   FULL,
   FAST,
-  GOOD,  // 6_1
+  GOOD,  // 6_1 // Might burn the display after days/weeks...
   QUICK, // 2_1
 };
 
@@ -28,7 +28,7 @@ struct DisplaySettings {
   bool mDarkBorder {false};
   uint8_t mRotation {2};
   DisplayMode mMenuLut {FAST};
-  DisplayMode mWatchLut {GOOD};
+  DisplayMode mWatchLut {FAST};
 };
 
 extern int getSetDisplayMode();
