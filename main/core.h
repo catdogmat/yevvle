@@ -26,6 +26,7 @@ public:
     void handleTouch();
     const UI::Any& findUi();
     UI::Any createMainMenu();
+    void finishTasks();
 
     void NTPSync();
 

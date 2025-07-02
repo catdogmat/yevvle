@@ -46,6 +46,36 @@ Core::Core()
     // reset calibration to the ESP32
     mTime.calReset();
 
+    // Queue the rest of the first boot for later
+    mTasks.emplace_back(std::async(std::launch::deferred, [&]{
+        // Delay boot, try to get GPS location, to setup time/location
+        if constexpr (HW::kHasGps) {
+            mGps.on();
+            // Try acquire GPS for 30s
+            mDisplay.println("Waiting for GPS 30s");
+            mDisplay.writeAllAndRefresh();
+            auto deadline = millis() + 30'000;
+            while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
+                if (!mGps.read())
+                    break;
+            }
+            if (auto datetime = mGps.mData.mDateTime) {
+                mTime.setTime(datetime->mElements, true);
+                // Roughtly adjust the centiseconds
+                mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
+            }
+            mGps.off();
+        } else {
+            // HACK: Set a fixed time/location to start with
+            tmElements_t time{.Second=0, .Minute=32, .Hour=18, .Wday=0, .Day=2, .Month=7, .Year=2025-1970};
+            mTime.getMinutesWest() = 60;
+            mTime.setTime(time);
+            mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
+        }
+        // Start up the lora module listening ?
+        mLora.startReceive();
+    }));
+
     return true;
 }()}
 , mSpi{}
@@ -55,6 +85,9 @@ Core::Core()
 , mNow{mTime.getElements()}
 , mUi{createMainMenu()}
 {
+    // Finish pending tasks added during boot (before inputs/events)
+    finishTasks();
+
     // ESP_LOGE("boot","");
     // Wake up reason affects how to proceed
     auto wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -82,32 +115,6 @@ Core::Core()
         break;
     default: // First time boot!
         ESP_LOGE("", "boot %lu unkown wakeup reason %d", micros(), wakeup_reason);
-        // First boot, try to get GPS location, to setup time/location
-        if constexpr (HW::kHasGps) {
-            mGps.on();
-            // Try acquire GPS for 30s
-            mDisplay.println("Waiting for GPS 30s");
-            mDisplay.writeAllAndRefresh();
-            auto deadline = millis() + 10'000;
-            while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
-                if (!mGps.read())
-                    break;
-            }
-            if (auto datetime = mGps.mData.mDateTime) {
-                mTime.setTime(datetime->mElements, true);
-                // Roughtly adjust the centiseconds
-                mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
-            }
-            mGps.off();
-        } else {
-            // HACK: Set a fixed time/location to start with
-            tmElements_t time{.Second=0, .Minute=30, .Hour=14, .Wday=0, .Day=5, .Month=6, .Year=2025-1970};
-            mTime.getMinutesWest() = 60;
-            mTime.setTime(time);
-            mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
-        }
-        // Start up the lora module listening ?
-        mLora.startReceive();
         break;
     }
 
@@ -170,7 +177,7 @@ Core::Core()
 
     // Finish display & pending tasks, then setup touch
     mDisplay.hibernate();
-    mTasks.clear();
+    finishTasks();
     mTouch.setUp(kSettings.mUi.mDepth < 0);
 
     // Calculate stepsize based on battery level or on battery save mode
@@ -297,6 +304,12 @@ void Core::handleTouch() {
             }
         }
     }, item);
+}
+
+void Core::finishTasks() {
+    for(auto& f : mTasks)
+        f.get();
+    mTasks.clear();
 }
 
 #include <Arduino.h>
