@@ -51,10 +51,11 @@ void Touch::setUp(bool onlyMenuLight) {
 
 #if(HW_VERSION < 10)
   touch_ll_set_meas_time(mSettings.mCycles[onlyMenuLight] * 1024);
+  touch_pad_set_measurement_interval((32 * 1024) / MeasureRate::_1s * mSettings.mRate[onlyMenuLight]);
 #else
   touch_ll_set_meas_times(mSettings.mCycles[onlyMenuLight] * 1024);
+  touch_pad_set_measurement_interval((4 * 1024) / MeasureRate::_1s * mSettings.mRate[onlyMenuLight]); //???
 #endif
-  touch_pad_set_measurement_interval((32 * 1024) / MeasureRate::_1s * mSettings.mRate[onlyMenuLight]);
 
   auto setTouchPad = [&](auto&& v, bool enabled) {
     auto pad = (touch_pad_t)HW::Touch::Pad[mSettings.mMap[v]];
@@ -64,7 +65,7 @@ void Touch::setUp(bool onlyMenuLight) {
     if (enabled)
        touch_pad_set_group_mask((1 << pad), (1 << pad), (1 << pad));
 #else
-    uint16_t th = enabled ? 1000 : 1000000;
+    uint16_t th = enabled ? 100 : 1000000;
 #endif
     touch_ll_set_threshold(pad, th);
     // ESP_LOGE("setup", "%d, %d", pad, th);
