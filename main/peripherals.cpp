@@ -52,11 +52,11 @@ struct Speaker {
         }
     };
     ledc_channel_config(&ledc_channel);
-    Power::lock();
+    Power::lock(Power::Flag::Speaker);
   }
   ~Speaker() {
     stop();
-    Power::unlock();
+    Power::unlock(Power::Flag::Speaker);
   }
 
   // Select resolution based on the frequency values, not to overflow or underflow divisor

@@ -34,17 +34,19 @@ Core::Core()
     }
 #endif
 
-    // Recover Settings from Disk // TODO
-    // load NVS and load settings
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 
-    // Select default voltage 2.6V
-    Power::low();
+    // We can´t select the Power value, just cycle trough it once to set it off
+    Power::lock(Power::Flag::Display);
+    Power::unlock(Power::Flag::Display);
     Light::off();
     
     // reset calibration to the ESP32
     mTime.calReset();
+
+    // Recover Settings from Disk // TODO
+    // load NVS and load settings
 
     // Queue the rest of the first boot for later
     mTasks.emplace_back(std::async(std::launch::deferred, [&]{
@@ -318,7 +320,7 @@ void Core::finishTasks() {
 void Core::NTPSync() {
   // Select default voltage 2.9V/3.3V for WiFi
   // We need Arduino for this (WiFi + NTP)
-  Power::lock();
+  Power::lock(Power::Flag::Wifi);
 //   initArduino();
 
 //   WiFi.waitForConnectResult();
@@ -339,5 +341,5 @@ void Core::NTPSync() {
 
   ESP_LOGE("NTP", "done");
 
-  Power::unlock();
+  Power::unlock(Power::Flag::Wifi);
 }

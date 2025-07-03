@@ -90,7 +90,7 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
     kDSState.displayBusy = false;
 
     // Go back to low power mode
-    Power::unlock();
+    Power::unlock(Power::Flag::Display);
     uSpi::init();
 
     // Wait until display busy goes off (this will not be needed in next HW version
@@ -159,7 +159,7 @@ void RTC_IRAM_ATTR wake_stub_deepsleep(void)
   // Turn on high power mode since it makes display use less power
   // Display boost uses -/+ 15 V, it is better 4V -> 3V -> 15V than 4V -> 1.9V -> 15V
   // It will take around 125us * 0.1V, for 1.4V ramp = 1.7ms, use 1ms of the reset
-  Power::lock();
+  Power::lock(Power::Flag::Display);
 
   // Turn off the light if it is on when we do a normal update
   Light::off();

@@ -51,9 +51,9 @@ void Light::set(bool high) {
 
   // LED requires high power while it is on, locking it
   if (high) {
-    Power::lock();
+    Power::lock(Power::Flag::Light);
   } else {
-    Power::unlock();
+    Power::unlock(Power::Flag::Light);
   }
 
   // Hold enable

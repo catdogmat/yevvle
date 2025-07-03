@@ -10,6 +10,11 @@
 RTC_DATA_ATTR Gps::Data Gps::mData {};
 
 void Gps::set(bool high) {
+  if (high) {
+    Power::lock(Power::Flag::Gps);
+  } else {
+    Power::lock(Power::Flag::Gps);
+  }
   rtc_gpio_hold_dis((gpio_num_t)HW::Gps::Vcc);
   pinMode(HW::Gps::Vcc, OUTPUT);
   digitalWrite(HW::Gps::Vcc, !high);

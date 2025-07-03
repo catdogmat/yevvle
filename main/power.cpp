@@ -7,37 +7,34 @@
 
 namespace {
   RTC_SLOW_ATTR bool kPrev{false};
-  RTC_SLOW_ATTR std::atomic<int> kLock{0};
+  RTC_SLOW_ATTR std::atomic<uint8_t> kLock{0};
 } // namespace
 
 #include "soc/rtc_periph.h"
 #include "rom/gpio.h"
 #include "deep_sleep_utils.h"
 
-void Power::lock() {
-  // std::lock_guard<std::mutex> guard(kMutex);
-  // ESP_LOGE("power", "lock -> %d", kLock.load());
-  if (kLock.fetch_add(1, std::memory_order_acq_rel) == 0) {
+void Power::lock(Flag f) {
+  // ESP_LOGE("power", "lock -> %x + %x", kLock.load(), f);
+  // If the value returned is "0", this thread is responsible for locking
+  if (kLock.fetch_or(f, std::memory_order_acq_rel) == 0) {
     high();
   }
-  // if (kCounter++ == 0) {
-  //   high();
-  // }
 }
 
-void Power::unlock() {
-  // std::lock_guard<std::mutex> guard(kMutex);
-  // ESP_LOGE("power", "unlock -> %d", kLock.load());
-  if (kLock.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+void Power::unlock(Flag f) {
+  // ESP_LOGE("power", "unlock -> %x + %x", kLock.load(), f);
+  // If the value returned is the flag, this thread is responsible for releasing
+  if (kLock.fetch_and(~f, std::memory_order_acq_rel) == f) {
     low();
   }
-  // if (kCounter-- == 1) {
-  //   low();
-  // }
 }
 
 bool Power::current() {
   return kPrev;
+}
+Power::Flag Power::status() {
+  return static_cast<Power::Flag>(kLock.load());
 }
 
 // Need to store this in RTC memory since will not be available in DeepSleep
