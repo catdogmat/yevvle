@@ -53,20 +53,6 @@ Core::Core()
         // Delay boot, try to get GPS location, to setup time/location
         if constexpr (HW::kHasGps) {
             mGps.on();
-            // Try acquire GPS for 30s
-            mDisplay.println("Waiting for GPS 30s");
-            mDisplay.writeAllAndRefresh();
-            auto deadline = millis() + 30'000;
-            while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
-                if (!mGps.read())
-                    break;
-            }
-            if (auto datetime = mGps.mData.mDateTime) {
-                mTime.setTime(datetime->mElements, true);
-                // Roughtly adjust the centiseconds
-                mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
-            }
-            mGps.off();
         } else {
             // HACK: Set a fixed time/location to start with
             tmElements_t time{.Second=0, .Minute=32, .Hour=18, .Wday=0, .Day=2, .Month=7, .Year=2025-1970};
@@ -89,6 +75,22 @@ Core::Core()
 {
     // Finish pending tasks added during boot (before inputs/events)
     finishTasks();
+
+    // Check GPS on a background task
+            //     // Try acquire GPS for 30s
+            // mDisplay.println("Waiting for GPS 30s");
+            // mDisplay.writeAllAndRefresh();
+            // auto deadline = millis() + 30'000;
+            // while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
+            //     if (!mGps.read())
+            //         break;
+            // }
+            // if (auto datetime = mGps.mData.mDateTime) {
+            //     mTime.setTime(datetime->mElements, true);
+            //     // Roughtly adjust the centiseconds
+            //     mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
+            // }
+            // mGps.off();
 
     // ESP_LOGE("boot","");
     // Wake up reason affects how to proceed

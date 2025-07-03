@@ -23,9 +23,10 @@ public:
     std::optional<float> mDirection;
   } mData;
 
-  void on() { set(true); }
-  void off() { set(false); }
-  void set(bool high);
+  void on() const { set(true); }
+  void off() const { set(false); }
+  void set(bool high) const;
+  bool isOn() const;
 
-  bool read();
+  bool read() const;
 };

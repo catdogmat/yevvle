@@ -3,17 +3,22 @@
 #include <string>
 
 #include "gps.h"
+#include "power.h"
 
 #include "driver/rtc_io.h"
 #include "esp32-hal-log.h"
 
 RTC_DATA_ATTR Gps::Data Gps::mData {};
 
-void Gps::set(bool high) {
+void Gps::set(bool high) const {
+  if constexpr (!HW::kHasGps) {
+    Power::unlock(Power::Flag::Gps);
+    return;
+  }
   if (high) {
     Power::lock(Power::Flag::Gps);
   } else {
-    Power::lock(Power::Flag::Gps);
+    Power::unlock(Power::Flag::Gps);
   }
   rtc_gpio_hold_dis((gpio_num_t)HW::Gps::Vcc);
   pinMode(HW::Gps::Vcc, OUTPUT);
@@ -21,12 +26,17 @@ void Gps::set(bool high) {
   rtc_gpio_hold_en((gpio_num_t)HW::Gps::Vcc);
 }
 
-bool Gps::read() {
+bool Gps::isOn() const {
+  return Power::status() & Power::Flag::Gps;
+}
+
+bool Gps::read() const {
   if constexpr (!HW::kHasGps) {
     return false;
   }
-
-  on();
+  if (!isOn()) {
+    return false;
+  }
 
   // Initialize HW serial to receive data
   HardwareSerial mSerial{2};
@@ -72,7 +82,7 @@ bool Gps::read() {
     fields.emplace_back(sv);
 
     if (fields.size() != 14) {
-      ESP_LOGE("GPS", "RMC wrong fileds %d %s", fields.size(), std::string(sv).c_str());
+      ESP_LOGE("GPS", "RMC wrong fields %d %s", fields.size(), std::string(sv).c_str());
       continue;
     }
 
