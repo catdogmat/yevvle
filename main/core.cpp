@@ -56,7 +56,7 @@ Core::Core()
             mGps.on();
         } else {
             // HACK: Set a fixed time/location to start with
-            tmElements_t time{.Second=0, .Minute=32, .Hour=18, .Wday=0, .Day=2, .Month=7, .Year=2025-1970};
+            tmElements_t time{.Second=0, .Minute=9, .Hour=23, .Wday=0, .Day=7, .Month=7, .Year=2025-1970};
             mTime.getMinutesWest() = 60;
             mTime.setTime(time);
             mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
@@ -72,7 +72,7 @@ Core::Core()
 , mBattery{kSettings.mBattery}
 , mTouch{kSettings.mTouch}
 , mNow{mTime.getElements()}
-, mUi{createMainMenu()}
+, mUi{generateMenus()}
 {
     // Finish pending tasks added during boot (before inputs/events)
     finishTasks();
@@ -245,7 +245,7 @@ Core::Core()
 
 const UI::Any& Core::findUi() {
     // Find current UI element in view by recursively finding deeper elements
-    const UI::Any* item = &mUi;
+    const UI::Any* item = &*mUi;
     for (auto i=0; i < kSettings.mUi.mDepth; i++) {
         auto& index = kSettings.mUi.mState[i];
         const UI::Any* nextItem = nullptr;

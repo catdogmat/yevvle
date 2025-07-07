@@ -25,7 +25,8 @@ public:
 
     void handleTouch();
     const UI::Any& findUi();
-    UI::Any createMainMenu();
+    UI::Any generateMenus();
+    void regenerateMenus() { mUi.emplace(generateMenus()); };
     void finishTasks();
 
     void NTPSync();
@@ -40,5 +41,5 @@ public:
     Touch mTouch;
 
     const tmElements_t& mNow;
-    const UI::Any mUi;
+    std::optional<UI::Any> mUi; // optional to allow re-generation of complex type
 };

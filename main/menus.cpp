@@ -6,50 +6,78 @@
 #include "settings.h"
 #include "ble.h"
 
-UI::Any Core::createMainMenu() {
-  return UI::Menu{"Main Menu", {
-      UI::Menu{"Clock", {
-        UI::DateTime{"Set DateTime", mTime},
-          UI::Number{"UTC",
-            []{ return kSettings.mTime.mMinutesWest / 60;},
-            [](int v){ auto& west = kSettings.mTime.mMinutesWest;
-                       west = std::clamp<int16_t>(west + v * 60, -12 * 60, 12 * 60);}
-          },
-        UI::Menu{"Calibration", {
-          UI::Action{"Sync", [&]{ mTime.calUpdate(); }},
-          UI::Action{"Reset", [&]{ mTime.calReset(); }},
-          UI::Text{[&] -> std::string {
-            if (!kSettings.mTime.mSync)
-              return "\n Not calibrated\n Set Date/Time\n then press Sync";
-            auto& sync = *kSettings.mTime.mSync;
-            tmElements_t last;
-            breakTime(sync.mTime.tv_sec, last);
-            char lastTime[32];
-            std::sprintf(lastTime, "\n  %02d:%02d:%02d\n  %02d/%02d/%04d", last.Hour, last.Minute, last.Second, last.Day, last.Month, last.Year + 1970);
-            auto elapsed = mTime.getTimeval().tv_sec - sync.mTime.tv_sec;
-            auto actuallyElapsed = elapsed - kSettings.mTime.mSync->mDrift.tv_sec;
-            bool megasec = actuallyElapsed > 1'000'000;
-            char ppm[10];
-            std::sprintf(ppm, "%+.2f", mTime.getPpm());
+std::vector<UI::Any> buildAlarms(Core& core) {
+  std::vector<UI::Any> alarms;
+  auto newAlarm = [&] -> std::optional<int> {
+    for (auto i=0; i<kSettings.mAlarms.size(); i++) {
+      auto& a = kSettings.mAlarms[i];
+      if (!a.mEnabled)
+        return i;
+    }
+    return std::nullopt;
+  }();
+  if (newAlarm) {
+    alarms.emplace_back(UI::Action{"Add Alarm", [&, i=*newAlarm] {
+      kSettings.mAlarms[i].mEnabled = true;
+      core.regenerateMenus();
+    }});
+  }
 
-            return "\n Last sync on:" + std::string(lastTime) +
-              "\n Err: " + std::to_string(kSettings.mTime.mSync->mDrift.tv_sec) +
-              "/" + std::to_string(actuallyElapsed / (megasec ? 1'000'000 : 1)) + (megasec ? "M" : "") +
-              "\n PPM:" + std::string(ppm) +
-              "\n Cal:" + std::to_string(kSettings.mTime.mCalibration);
-          }},
+  for (auto i=0; i<kSettings.mAlarms.size(); i++) {
+    auto& a = kSettings.mAlarms[i];
+    if (!a.mEnabled)
+      continue;
+    alarms.emplace_back(UI::Action{"Alarm "+std::to_string(i), [&] {
+      a.mEnabled = false;
+      core.regenerateMenus();
+    }});
+  }
+  return alarms;
+};
+
+UI::Any Core::generateMenus() {
+  return UI::Menu{"Main Menu", {
+    UI::Menu{"Clock", {
+      UI::DateTime{"Set DateTime", mTime},
+      // UI::Indent{
+        UI::Number{"UTC",
+          []{ return kSettings.mTime.mMinutesWest / 60;},
+          [](int v){ auto& west = kSettings.mTime.mMinutesWest;
+                    west = std::clamp<int16_t>(west + v * 60, -12 * 60, 12 * 60);}
+        },
+      // },
+      UI::Menu{"Calibration", {
+        UI::Action{"Sync", [&]{ mTime.calUpdate(); }},
+        UI::Action{"Reset", [&]{ mTime.calReset(); }},
+        UI::Text{[&] -> std::string {
+          if (!kSettings.mTime.mSync)
+            return "\n Not calibrated\n Set Date/Time\n then press Sync";
+          auto& sync = *kSettings.mTime.mSync;
+          tmElements_t last;
+          breakTime(sync.mTime.tv_sec, last);
+          char lastTime[32];
+          std::sprintf(lastTime, "\n  %02d:%02d:%02d\n  %02d/%02d/%04d", last.Hour, last.Minute, last.Second, last.Day, last.Month, last.Year + 1970);
+          auto elapsed = mTime.getTimeval().tv_sec - sync.mTime.tv_sec;
+          auto actuallyElapsed = elapsed - kSettings.mTime.mSync->mDrift.tv_sec;
+          bool megasec = actuallyElapsed > 1'000'000;
+          char ppm[10];
+          std::sprintf(ppm, "%+.2f", mTime.getPpm());
+
+          return "\n Last sync on:" + std::string(lastTime) +
+            "\n Err: " + std::to_string(kSettings.mTime.mSync->mDrift.tv_sec) +
+            "/" + std::to_string(actuallyElapsed / (megasec ? 1'000'000 : 1)) + (megasec ? "M" : "") +
+            "\n PPM:" + std::string(ppm) +
+            "\n Cal:" + std::to_string(kSettings.mTime.mCalibration);
         }},
+      }},
       UI::Menu{"Hour Beep", {
         UI::Bool{"Beep", kSettings.mHourly.mBeep },
         UI::Bool{"Vibrate", kSettings.mHourly.mVib },
         UI::NumberRange<int8_t>{"First Hour", kSettings.mHourly.mFirst, {0, 24} },
         UI::NumberRange<int8_t>{"Last Hour", kSettings.mHourly.mLast, {0, 24} },
       }},
-      UI::Menu{"Alarms", {
-      }},
-      UI::Action{"NTP", [&]{
-        NTPSync();
-      }},
+      UI::Menu{"Alarms", buildAlarms(*this)},
+      UI::Action{"NTP", [&]{ NTPSync(); }},
     }},
     UI::Menu{"Watchface", {
       // UI::Loop<int>{"Style",
@@ -179,6 +207,9 @@ UI::Any Core::createMainMenu() {
           }
         }));
       }},
-    }}
+    }},
+    UI::Menu{"Test2", {
+      UI::Name{"Battery V"+std::to_string(mBattery.mCurVoltage)},
+    }},
   }};
 };
