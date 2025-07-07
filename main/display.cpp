@@ -258,14 +258,14 @@ void Display::refresh()
     // Draw the backbuffer as well on first refresh
     writeAll(true);
   }
-  Power::lock(Power::Flag::Display);
-  _startTransfer();
-  _transferCommand(0x20);
-  _endTransfer();
+  {
+    auto powerLock = Power::Lock(Power::Flag::Display);
+    _startTransfer();
+    _transferCommand(0x20);
+    _endTransfer();
 
-  waitWhileBusy();
-  Power::unlock(Power::Flag::Display);
-
+    waitWhileBusy();
+  }
   if (!kState.firstRefreshDone) {
     _startTransfer();
     _setRefreshMode(kState.mode);

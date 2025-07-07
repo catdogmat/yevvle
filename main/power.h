@@ -18,6 +18,12 @@ struct Power {
         // Lora = 0x40,
     };
 
+    struct Lock {
+        Flag flag;
+        Lock(Flag f) : flag(f) { Power::lock(flag); }
+        ~Lock() { Power::unlock(flag); }
+    };
+
     static void RTC_SLOW_ATTR lock(Flag f);
     static void RTC_SLOW_ATTR unlock(Flag f);
 

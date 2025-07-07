@@ -38,9 +38,10 @@ Core::Core()
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 
     // We can´t select the Power value, just cycle trough it once to set it off
-    Power::lock(Power::Flag::Display);
-    Power::unlock(Power::Flag::Display);
-    Light::off();
+    {
+        auto _ = Power::Lock(Power::Flag::Display);
+        Light::off();
+    }
     
     // reset calibration to the ESP32
     mTime.calReset();
@@ -322,7 +323,7 @@ void Core::finishTasks() {
 void Core::NTPSync() {
   // Select default voltage 2.9V/3.3V for WiFi
   // We need Arduino for this (WiFi + NTP)
-  Power::lock(Power::Flag::Wifi);
+  auto powerLock = Power::Lock(Power::Flag::Wifi);
 //   initArduino();
 
 //   WiFi.waitForConnectResult();
@@ -342,6 +343,4 @@ void Core::NTPSync() {
 //   delay(5'000);
 
   ESP_LOGE("NTP", "done");
-
-  Power::unlock(Power::Flag::Wifi);
 }

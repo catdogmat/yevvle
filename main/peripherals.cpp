@@ -32,6 +32,8 @@ struct Speaker {
   constexpr static auto kSpeedMode = LEDC_LOW_SPEED_MODE;
   constexpr static auto kClock = LEDC_USE_RC_FAST_CLK;
 
+  Power::Lock powerLock = Power::Lock(Power::Flag::Speaker);
+
   Speaker() {
     // Enable light sleep while Speaker active
     esp_sleep_pd_config(ESP_PD_DOMAIN_RC_FAST, ESP_PD_OPTION_ON);
@@ -52,11 +54,10 @@ struct Speaker {
         }
     };
     ledc_channel_config(&ledc_channel);
-    Power::lock(Power::Flag::Speaker);
   }
   ~Speaker() {
     stop();
-    Power::unlock(Power::Flag::Speaker);
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RC_FAST, ESP_PD_OPTION_AUTO);
   }
 
   // Select resolution based on the frequency values, not to overflow or underflow divisor
