@@ -23,14 +23,26 @@ public:
   , mMinPower(minPower)
   , mMaxPower(maxPower)
   {
-    kRadio->XTAL = true; // Needed, aparently, why?
-    kRadio->beginFSK(freq);
+    if (int16_t err = kRadio->beginFSK(freq)) {
+      ESP_LOGE("Lora", "beginFSK error: %d", err);
+    }
     kRadio->setFrequency(freq);
     kRadio->transmitDirect();
     kRadio->setOutputPower(mMinPower);  // Initially set to low
   }
   ~OOK() {
-    kRadio->standby();
+    // TODO: How to fix the sleep power
+    // kRadio->sleep();
+    kRadio->sleep(false); // ~0.3 uA @ 3.3V
+    // Hold some pins to some values to avoid leaking current
+    rtc_gpio_hold_en((gpio_num_t)HW::Lora::Cs);
+  }
+
+  int16_t setOutputPowerFast(int8_t power) {
+    if (auto state = kRadio->checkOutputPower(power, NULL))
+      return state;
+    const uint8_t data[] = { static_cast<uint8_t>(power), RADIOLIB_SX126X_PA_RAMP_10U };
+    return kModule->SPIwriteStream(RADIOLIB_SX126X_CMD_SET_TX_PARAMS, data, 2);
   }
 
   void transmit(std::vector<uint8_t> seq){
@@ -39,7 +51,7 @@ public:
       uint8_t byte = seq[byteIdx];
       for (int bitIdx = 7; bitIdx >= 0; --bitIdx) {
         bool bit = (byte >> bitIdx) & 0x01;
-        kRadio->setOutputPower(bit ? mMaxPower : mMinPower);
+        setOutputPowerFast(bit ? mMaxPower : mMinPower);
         kModule->waitForMicroseconds(start, mBitUsDuration);
         start += mBitUsDuration;
       }
@@ -49,6 +61,8 @@ public:
 };
 
 void Lora::sendClose() {
+  if (!kRadio)
+    return;
   ESP_LOGE("Send", "close");
   auto ook = OOK(355, 433.98);
   for(auto i=0; i<5; i++) {
@@ -57,6 +71,8 @@ void Lora::sendClose() {
   }
 }
 void Lora::sendOpen() {
+  if (!kRadio)
+    return;
   ESP_LOGE("Send", "open");
   auto ook = OOK(355, 433.98);
   for(auto i=0; i<5; i++) {
@@ -68,27 +84,20 @@ Lora::Lora() {
   if constexpr (!HW::kHasLora) {
     return;
   }
-  // if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Lora::Dio1))
-  //    rtc_gpio_pulldown_en((gpio_num_t)HW::Lora::Dio1);
-  // if (rtc_gpio_is_valid_gpio((gpio_num_t)HW::Lora::Busy))
-  //    rtc_gpio_pullup_en((gpio_num_t)HW::Lora::Busy);
   if (!kRadio) {
-    // ESP_LOGE("lora", "initialize");
     // Construct the RadioLib objects just once in RTC mem
-    kSpi.emplace(20'000'000, MSBFIRST, SPI_MODE0);
+    kSpi.emplace(10'000'000, MSBFIRST, SPI_MODE0);
     kHal.emplace(SPI, *kSpi);
     kModule.emplace(&kHal.value(), HW::Lora::Cs, HW::Lora::Dio1, HW::Lora::Res, HW::Lora::Busy);
-    return; // FIX ME, if the module is not present should not crash the chip
     kRadio.emplace(&kModule.value());
-    // kRadio.XTAL = false;
-    // kRadio.standbyXOSC = false;
-    // kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
-    kRadio->sleep();
+    kRadio->XTAL = true;
+    kRadio->begin();
+    sleep();
+  } else {
+    kHal->pinMode(kModule->getIrq(), kHal->GpioModeInput);
+    kHal->pinMode(kModule->getGpio(), kHal->GpioModeInput);
+    kModule->init();
   }
-
-  kHal->pinMode(kModule->getIrq(), kHal->GpioModeInput);
-  kHal->pinMode(kModule->getGpio(), kHal->GpioModeInput);
-  kModule->init();
 }
 
 void Lora::startReceive()
@@ -133,4 +142,5 @@ void Lora::receive() {
     return;
   }
   ESP_LOGE("Lora", "receive error: %d", status);
+  sleep();
 }

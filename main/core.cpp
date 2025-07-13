@@ -64,7 +64,7 @@ Core::Core()
             mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
         }
         // Start up the lora module listening ?
-        mLora.startReceive();
+        // mLora.startReceive();
     }));
 
     return true;

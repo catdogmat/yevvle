@@ -15,7 +15,7 @@ struct Power {
         Gps = 0x08,
         Wifi = 0x10,
         BT = 0x20,
-        // Lora = 0x40,
+        Lora = 0x40,
     };
 
     struct Lock {

@@ -150,10 +150,8 @@ UI::Any Core::generateMenus() {
           delay(50'000);
         }));
       }},
-      UI::Action{"Lora Test", [&]{
+      UI::Action{"Lora Start Rcv", [&]{
         mTasks.emplace_back(std::async(std::launch::async, [&]{
-          // mLora.setup();
-          //mLora.listen();
           mLora.startReceive();
         }));
       }},
