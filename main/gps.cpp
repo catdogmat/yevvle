@@ -30,7 +30,7 @@ bool Gps::isOn() const {
   return Power::status() & Power::Flag::Gps;
 }
 
-bool Gps::read() const {
+bool Gps::read(uint32_t timeout) const {
   if constexpr (!HW::kHasGps) {
     return false;
   }
@@ -40,11 +40,14 @@ bool Gps::read() const {
 
   // Initialize HW serial to receive data
   HardwareSerial mSerial{2};
-  mSerial.begin(HW::Gps::BaudRate, SERIAL_8N1, HW::Gps::Rx, -1/*, HW::Gps::Tx*/, false, 1000);
+  mSerial.begin(HW::Gps::BaudRate, SERIAL_8N1, HW::Gps::Rx, -1/*, HW::Gps::Tx*/, false, timeout);
+  uint32_t maxWait = millis() + timeout;
 
   // If there is data in the receive buffer of the hardware serial
   // Discard all data until the $ sign
   while (!mSerial.readStringUntil('$').isEmpty()) {
+    if (millis() > maxWait)
+      return false;
     delay(1); // Feed the wdt
     // Read a packet
     auto packet = mSerial.readStringUntil('*');
@@ -53,7 +56,7 @@ bool Gps::read() const {
     if (packet.substring(2,5) != "RMC") 
       continue;
 
-    ESP_LOGE("gps", "Processing: %s", packet.c_str());
+    // ESP_LOGE("gps", "Processing: %s", packet.c_str());
     // Read CRC
     char crcBytes[2];
     mSerial.readBytes(crcBytes, 2);

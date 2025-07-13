@@ -28,5 +28,5 @@ public:
   void set(bool high) const;
   bool isOn() const;
 
-  bool read() const;
+  bool read(uint32_t timeout = 200) const;
 };

@@ -45,19 +45,20 @@ Core::Core()
     
     // reset calibration to the ESP32
     mTime.calReset();
+    mTime.getMinutesWest() = 60; // Default zone +1
 
     // Recover Settings from Disk // TODO
     // load NVS and load settings
 
-    // Queue the rest of the first boot for later
+    // Queue the rest of the first boot for later (GPS, LORA)
     mTasks.emplace_back(std::async(std::launch::deferred, [&]{
         // Delay boot, try to get GPS location, to setup time/location
         if constexpr (HW::kHasGps) {
             mGps.on();
         } else {
+            mGps.off();
             // HACK: Set a fixed time/location to start with
             tmElements_t time{.Second=0, .Minute=9, .Hour=23, .Wday=0, .Day=7, .Month=7, .Year=2025-1970};
-            mTime.getMinutesWest() = 60;
             mTime.setTime(time);
             mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
         }
@@ -78,20 +79,16 @@ Core::Core()
     finishTasks();
 
     // Check GPS on a background task
-            //     // Try acquire GPS for 30s
-            // mDisplay.println("Waiting for GPS 30s");
-            // mDisplay.writeAllAndRefresh();
-            // auto deadline = millis() + 30'000;
-            // while (millis() < deadline && (!mGps.mData.mDateTime || !mGps.mData.mLocation)) {
-            //     if (!mGps.read())
-            //         break;
-            // }
-            // if (auto datetime = mGps.mData.mDateTime) {
-            //     mTime.setTime(datetime->mElements, true);
-            //     // Roughtly adjust the centiseconds
-            //     mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
-            // }
-            // mGps.off();
+    if (HW::kHasGps && !mGps.mData.mLocation) {
+        mGps.read();
+        if (auto datetime = mGps.mData.mDateTime) {
+            mTime.setTime(datetime->mElements, true);
+            // Roughtly adjust the centiseconds
+            mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
+        }
+        if (mGps.mData.mLocation)
+            mGps.off();
+    }
 
     // ESP_LOGE("boot","");
     // Wake up reason affects how to proceed
@@ -221,8 +218,8 @@ Core::Core()
         kDSState.minutes = nextFullWake - mNow.Minute - firstMinutesSleep;
         // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
         kDSState.stepSize = stepSize;
-        // Only trigger the wakeupstub if there is any minute left
-        if (kDSState.minutes > 0) {
+        // Only trigger the wakeupstub if there is any minute left & we are not waiting for GPS
+        if (kDSState.minutes > 0 && !(HW::kHasGps && !mGps.mData.mLocation)) {
             if constexpr (HW::kHasDisplayBusyWake)
                 esp_sleep_enable_ext0_wakeup((gpio_num_t)HW::Display::Busy, 0);
             esp_set_deep_sleep_wake_stub(&wake_stub_deepsleep);
