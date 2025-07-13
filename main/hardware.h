@@ -95,26 +95,24 @@ struct HW_3 : public HW_2 {
     };
 
     struct Lora {
-        constexpr static uint8_t Cs = 32; // RTC reqired
+        constexpr static uint8_t Cs = 26; // RTC reqired
         constexpr static uint8_t Res = 19;
         constexpr static uint8_t Busy = 37; // Input only pin
         constexpr static uint8_t Dio1 = 36; // IRQ // Input only pin
     };
 
     struct Gps {
-        // constexpr static uint8_t Tx = ??; // Not need to TX to the GPS
         constexpr static uint8_t Rx = 39; // Input only pin
         constexpr static uint8_t Vcc = 27; // RTC required
         constexpr static auto BaudRate = 115200;
     };
 
     constexpr static uint8_t kAdcPin = 34;
-    constexpr static uint8_t kLightPin = 25;
+    constexpr static uint8_t kLightPin = 25; // RTC required
     constexpr static uint8_t kSpeakerPin = 22;
-    constexpr static uint8_t kVibratorPin = 26;
-    constexpr static uint8_t kVoltageSelectPin = 13;
+    constexpr static uint8_t kVibratorPin = 21;
+    constexpr static uint8_t kVoltageSelectPin = 13; // RTC required
 };
-
 
 // New board based on ESP32-S3-FN8
 struct HW_10 {
