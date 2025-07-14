@@ -32,12 +32,12 @@ public:
     void NTPSync();
 
     Time mTime;
+    Battery mBattery;
     const bool mFirstTimeBoot;
     Spi mSpi;
     Display mDisplay;
     Gps mGps;
     Lora mLora;
-    Battery mBattery;
     Touch mTouch;
 
     const tmElements_t& mNow;

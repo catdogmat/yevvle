@@ -1,5 +1,6 @@
 
 #include "battery.h"
+#include "power.h"
 
 #include "esp_adc/adc_oneshot.h"
 
@@ -53,7 +54,7 @@ uint16_t Battery::readVoltageScaled() const {
     // return reading;
 
     // Battery voltage goes through a 1/2 divider, we take care later of it
-    return analogReadMilliVolts(HW::kAdcPin) * mSettings.mScale / 64;
+    return analogReadMilliVolts(HW::kAdcPin) * mSettings.mScales[Power::current()] / 64;
 }
 
 uint16_t Battery::percent() const {

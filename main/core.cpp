@@ -16,6 +16,7 @@ RTC_DATA_ATTR Settings kSettings;
 
 Core::Core()
 : mTime{kSettings.mTime}
+, mBattery{kSettings.mBattery}
 , mFirstTimeBoot{[&]{
     static RTC_DATA_ATTR bool sDone = false;
     if (sDone)
@@ -70,7 +71,6 @@ Core::Core()
 }()}
 , mSpi{}
 , mDisplay{}
-, mBattery{kSettings.mBattery}
 , mTouch{kSettings.mTouch}
 , mNow{mTime.getElements()}
 , mUi{generateMenus()}

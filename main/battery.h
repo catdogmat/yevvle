@@ -7,7 +7,8 @@
 #include <utility>
 
 struct BatterySettings {
-    uint8_t mScale{128}; // Adjust the scaler, Divided by 64, default 2x
+    // Scaler is later divided by "64", calibrate for each HW
+    std::array<uint8_t, 2> mScales{96, 129};
     uint8_t mSamples{1};
 
     // Runing average battery indicator
