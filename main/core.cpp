@@ -88,6 +88,8 @@ Core::Core()
         }
         if (mGps.mData.mLocation)
             mGps.off();
+        else
+            setNextUpdate(10); // Check every 10s the GPS
     }
 
     // ESP_LOGE("boot","");
@@ -216,16 +218,22 @@ Core::Core()
     if (kSettings.mUi.mDepth < 0) {
         kDSState.currentMinutes = mNow.Minute + firstMinutesSleep;
         kDSState.minutes = nextFullWake - mNow.Minute - firstMinutesSleep;
+        if (mNextUpdate) {
+            kDSState.minutes = (*mNextUpdate + mNow.Second + 1) / 60;
+        }
         // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
         kDSState.stepSize = stepSize;
-        // Only trigger the wakeupstub if there is any minute left & we are not waiting for GPS
-        if (kDSState.minutes > 0 && !(HW::kHasGps && !mGps.mData.mLocation)) {
+        // Only trigger the wakeupstub if there is more than 1 minute left
+        if (kDSState.minutes > 0) {
             if constexpr (HW::kHasDisplayBusyWake)
                 esp_sleep_enable_ext0_wakeup((gpio_num_t)HW::Display::Busy, 0);
             esp_set_deep_sleep_wake_stub(&wake_stub_deepsleep);
+        } else if (mNextUpdate) {
+            esp_sleep_enable_timer_wakeup(*mNextUpdate * 1'000'000);
+        } else {
+            auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
+            esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
         }
-        auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
-        esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
     } else {
         // Disable the wake stub and count a fix time
         esp_set_deep_sleep_wake_stub(NULL);
@@ -312,6 +320,11 @@ void Core::finishTasks() {
     for(auto& f : mTasks)
         f.get();
     mTasks.clear();
+}
+
+void Core::setNextUpdate(uint32_t seconds)
+{
+    mNextUpdate = std::min(mNextUpdate.value_or(-1), seconds);
 }
 
 #include <Arduino.h>

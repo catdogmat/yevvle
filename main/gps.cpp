@@ -12,8 +12,7 @@ RTC_DATA_ATTR Gps::Data Gps::mData {};
 
 void Gps::set(bool high) const {
   if constexpr (!HW::kHasGps) {
-    Power::unlock(Power::Flag::Gps);
-    return;
+    high = false;
   }
   if (high) {
     Power::lock(Power::Flag::Gps);

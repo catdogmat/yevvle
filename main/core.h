@@ -19,6 +19,7 @@
  */
 class Core {
     std::vector<std::future<void>> mTasks;
+    std::optional<uint32_t> mNextUpdate;
 
 public:
     Core();
@@ -27,6 +28,7 @@ public:
     const UI::Any& findUi();
     UI::Any generateMenus();
     void regenerateMenus() { mUi.emplace(generateMenus()); };
+    void setNextUpdate(uint32_t seconds);
     void finishTasks();
 
     void NTPSync();
@@ -42,4 +44,5 @@ public:
 
     const tmElements_t& mNow;
     std::optional<UI::Any> mUi; // optional to allow re-generation of complex type
+
 };
