@@ -57,6 +57,11 @@ struct Name {
     std::string name() const { return baseName; };
 };
 
+struct Indent : public Name {
+    // Maybe add a parameter to how much?
+    std::string name() const { return " " + baseName; };
+};
+
 struct Text {
     std::function<std::string()> fName;
     std::string name() const { return fName(); };
@@ -183,8 +188,10 @@ struct DateTime : public Name {
 
 class Sub;
 class Menu;
+class If;
 
 using Any = std::variant<
+    Indent,
     DateTime,
     Menu,
     Sub,
@@ -198,6 +205,18 @@ using Any = std::variant<
     NumberRange<int8_t>,
     Text,
     Name>;
+
+// struct If {
+//     std::function<bool()> condition;
+//     Any item;
+//     // Extra tweaks
+//     bool showDisabled = true;
+//     // void capture_input() const {};
+//     // const Any* sub(uint8_t index) const;
+//     // void button_menu() const;
+//     // void button_updown(int b) const;
+//     // int index() const;
+// };
 
 struct Sub : public Name {
     std::vector<Any> items;
