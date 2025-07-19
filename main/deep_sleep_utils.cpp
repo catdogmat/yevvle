@@ -27,13 +27,13 @@ X(13) X(14) X(15) X(16) X(17) X(18) X(19) X(20) X(21) X(22) X(23) X(24) X(25) X(
 #define GPIO_INPUT_PIN_LIST X(35) X(36) X(37) X(38) X(39)
 #endif
 
-#define X(x) template<> RTC_IRAM_ATTR void gpio_mode_input<x>() { GPIO_MODE_INPUT(x); }
+#define X(x) template<> RTC_SLOW_ATTR void gpio_mode_input<x>() { GPIO_MODE_INPUT(x); }
 GPIO_PIN_LIST
 #undef X
-#define X(x) template<> RTC_IRAM_ATTR void gpio_mode_input<x>() {}
+#define X(x) template<> RTC_SLOW_ATTR void gpio_mode_input<x>() {}
 GPIO_INPUT_PIN_LIST
 #undef X
 
-#define X(x) template<> RTC_IRAM_ATTR void gpio_mode_output<x>() { GPIO_MODE_OUTPUT(x); }
+#define X(x) template<> RTC_SLOW_ATTR void gpio_mode_output<x>() { GPIO_MODE_OUTPUT(x); }
 GPIO_PIN_LIST
 #undef X

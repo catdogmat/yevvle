@@ -19,6 +19,8 @@ void Gps::set(bool high) const {
   } else {
     Power::unlock(Power::Flag::Gps);
   }
+  if (HW::Gps::Vcc == (uint8_t)-1)
+    return;
   rtc_gpio_hold_dis((gpio_num_t)HW::Gps::Vcc);
   pinMode(HW::Gps::Vcc, OUTPUT);
   digitalWrite(HW::Gps::Vcc, !high);

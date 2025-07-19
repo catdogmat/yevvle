@@ -91,7 +91,7 @@ Lora::Lora() {
     kModule.emplace(&kHal.value(), HW::Lora::Cs, HW::Lora::Dio1, HW::Lora::Res, HW::Lora::Busy);
     kRadio.emplace(&kModule.value());
     kRadio->XTAL = true;
-    kRadio->begin();
+    kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
     sleep();
   } else {
     kHal->pinMode(kModule->getIrq(), kHal->GpioModeInput);
