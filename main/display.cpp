@@ -22,7 +22,7 @@ static RTC_DATA_ATTR struct DisplayState {
   bool darkBorder : 1 {false};
   bool inverted : 1 {false};
   bool postInvert : 1 {false};
-  DisplayMode mode : 2 {DisplayMode::FULL};
+  DisplayMode mode {DisplayMode::FULL};
 } kState;
 
 int RTC_IRAM_ATTR getSetDisplayMode() { return kState.mode; };
@@ -142,11 +142,12 @@ void Display::init() {
 void Display::_setCustomLut(const DisplayMode& mode) {
   auto& lut = [&] -> const LUT& {
     if (mode == GOOD)
-      return SSD1681_LIGHTMYINK_CUSTOM_8_1;
-    if (mode == QUICK)
       return SSD1681_LIGHTMYINK_CUSTOM_6_1;
-
-    return SSD1681_LIGHTMYINK_CUSTOM_8_1;
+    if (mode == QUICK)
+      return SSD1681_LIGHTMYINK_CUSTOM_2_1;
+    if (mode == REPAIR)
+      return SSD1681_LIGHTMYINK_REPAIR;
+    return SSD1681_LIGHTMYINK_CUSTOM_6_1;
     // Other possible LUTS to use
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH;
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FAST_REFRESH;
@@ -208,6 +209,10 @@ void Display::setRefreshMode(DisplayMode mode)
   _startTransfer();
   _setRefreshMode(mode);
   _endTransfer();
+}
+DisplayMode Display::getRefreshMode() const
+{
+  return kState.mode;
 }
 
 void Display::_setRefreshMode(const DisplayMode& mode)

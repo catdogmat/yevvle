@@ -140,8 +140,8 @@ constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_10_0 = SSD1681_LIGHTMYINK_CUSTOM(10, 0);
 // Update the pixels that don´t change a minimal amount (25ms)
 // The ones that change update them longer (50ms/150ms)
 // Gives good quality, persistance, and low power
-constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_6_1 = SSD1681_LIGHTMYINK_CUSTOM(2, 1);
-constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_8_1 = SSD1681_LIGHTMYINK_CUSTOM(6, 1);
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_2_1 = SSD1681_LIGHTMYINK_CUSTOM(2, 1);
+constexpr LUT SSD1681_LIGHTMYINK_CUSTOM_6_1 = SSD1681_LIGHTMYINK_CUSTOM(6, 1);
 
 
 // A LUT to repair the burnt display? But it doesn´t...
@@ -150,19 +150,23 @@ constexpr auto SSD1681_LIGHTMYINK_REPAIR = LUT{
 #define PHASE(X) \
     { \
       .phase = { \
-        {.bb = W, .bw = W, .wb = W, .ww = W, .time = X}, \
-        {.bb = B, .bw = B, .wb = B, .ww = B, .time = X}, \
-        {.bb = W, .bw = W, .wb = W, .ww = W, .time = X}, \
-        {.bb = B, .bw = B, .wb = B, .ww = B, .time = X}, \
+        {.bb = W, .bw = B, .wb = W, .ww = B, .time = X}, \
+        {.bb = B, .bw = W, .wb = B, .ww = W, .time = X}, \
+        {.bb = W, .bw = B, .wb = B, .ww = W, .time = X}, \
+        {.bb = B, .bw = B, .wb = W, .ww = W, .time = X}, \
         }, \
       .rp = 64 / X, \
       .fr = 2, \
     }
+  PHASE(255),
+  //PHASE(128),
+  PHASE(64),
+  //PHASE(32),
   PHASE(16),
   PHASE(8),
-  PHASE(4),
-  PHASE(2),
-  PHASE(1),
+  //PHASE(4),
+  //PHASE(2),
+  //PHASE(1),
   },
   .eopt {0x07}, // "keep previous output before power off"
   .vgh {0x17}, // Max 20V

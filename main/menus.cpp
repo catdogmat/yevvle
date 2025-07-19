@@ -178,15 +178,23 @@ UI::Any Core::generateMenus() {
         }));
       }},
       UI::Action{"Display Restore", [&]{
-        mDisplay.setRefreshMode(DisplayMode::GOOD);
+        auto oldMode = mDisplay.getRefreshMode();
+        mDisplay.setRefreshMode(DisplayMode::REPAIR);
         bool inverted = false;
         while (true) {
           mDisplay.setInverted(inverted = !inverted);
-          for (int i=0; i<10; i++)
-            mDisplay.writeAllAndRefresh();
+          // Write some random patterns
+          for (int16_t y = 0; y < mDisplay.height(); y++) {
+            for (int16_t x = 0; x < mDisplay.width(); x++) {
+              // Random black or white
+              mDisplay.drawPixel(x, y, random(2));
+            }
+          }
+          mDisplay.writeAllAndRefresh();
           if (mTouch.readAndClear() != Touch::Btn::NONE)
             break;
         }
+        mDisplay.setRefreshMode(oldMode);
       }},
       UI::Action{"Parallel All", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
