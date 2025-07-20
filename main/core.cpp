@@ -267,12 +267,14 @@ const UI::Any& Core::findUi() {
             if constexpr (has_sub<decltype(e), uint8_t>::value) {
                 nextItem = e.sub(index);
             }
-            if constexpr (has_ref<decltype(e)>::value) {
-                nextItem = &e.ref();
-            }
         }, *item);
         if (nextItem == nullptr)
             break;
+        std::visit([&](auto& e) {
+            if constexpr (has_ref<decltype(e)>::value) {
+                nextItem = &e.ref();
+            }
+        }, *nextItem);
         item = nextItem;
     }
     return *item;

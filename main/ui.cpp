@@ -38,9 +38,20 @@ const Any* Sub::sub(uint8_t index) const {
 void Sub::button_menu() const {
     if (items.empty())
         return;
-    auto& item = items[index()];
+
+    // Resolve the ref before sending the button
+    auto& item = std::visit([&](auto& e) -> const Any& {
+        if constexpr (has_ref<decltype(e)>::value) {
+            return e.ref();
+        }
+        return items[index()];
+    }, items[index()]);
+
     std::visit([&](auto& e) {
-        if constexpr (has_capture_input<decltype(e)>::value) {
+        bool captureInput = false;
+        if constexpr (has_capture_input<decltype(e)>::value)
+            captureInput = e.capture_input();
+        if (captureInput) {
             ui.mDepth++; // Increase depth and let the sub handle it
         } else if constexpr (has_button<decltype(e)>::value) {
             e.button(Touch::MENU);
@@ -58,6 +69,22 @@ void Sub::button_updown(int b) const {
 int Sub::index() const {
     return curIndex(items.size());
 }
+
+
+std::string Indent::name() const {
+    return std::visit([&](auto& e) -> std::string {
+        if constexpr (has_name<decltype(e)>::value)
+            return " " + e.name();
+        return " NO_NAME";
+    }, mSub[0]);
+};
+const Any& Indent::ref() const { 
+    return std::visit([&](auto& e) -> const Any& {
+        if constexpr (has_ref<decltype(e)>::value)
+            return e.ref();
+        return mSub[0];
+    }, mSub[0]);
+};
 
 void Menu::render(Display& mDisplay) const {
     renderHeader(mDisplay, baseName);
@@ -86,9 +113,11 @@ void Number::render(Display& mDisplay) const {
     renderHeader(mDisplay, baseName);
 
     mDisplay.println();
-    mDisplay.print("< ");
-    mDisplay.print(get());
-    mDisplay.println(" >");
+    // auto w = mDisplay.getTextRect(std::to_string(get()).c_str).w;
+    mDisplay.println(" /\\ ");
+    mDisplay.print("  ");
+    mDisplay.println(get());
+    mDisplay.println(" \\/ ");
 
     mDisplay.writeAllAndRefresh(); 
 }

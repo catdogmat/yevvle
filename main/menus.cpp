@@ -51,13 +51,13 @@ UI::Any Core::generateMenus() {
   return UI::Menu{"Main Menu", {
     UI::Menu{"Clock", {
       UI::DateTime{"Set DateTime", mTime},
-      // UI::Indent{
+      // UI::Indent{1, {
         UI::Number{"UTC",
           []{ return kSettings.mTime.mMinutesWest / 60;},
           [](int v){ auto& west = kSettings.mTime.mMinutesWest;
                     west = std::clamp<int16_t>(west + v * 60, -12 * 60, 12 * 60);}
         },
-      // },
+      // }},
       UI::Menu{"Calibration", {
         UI::Action{"Sync", [&]{ mTime.calUpdate(); }},
         UI::Action{"Reset", [&]{ mTime.calReset(); }},

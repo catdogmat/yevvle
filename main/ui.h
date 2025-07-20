@@ -38,6 +38,7 @@ using has_##func = detect_##func<T, void, Args...>;
 GENERATE_HAS(name) // What to print by parents
 GENERATE_HAS(render) // What to render to screen
 GENERATE_HAS(sub) // Used recursively to get deeper elements
+GENERATE_HAS(ref) // Used to get the actual object, not the wrapper
 GENERATE_HAS(capture_input) // Used to automatically do depth++
 GENERATE_HAS(button)
 GENERATE_HAS(button_menu)
@@ -57,21 +58,15 @@ struct Name {
     std::string name() const { return baseName; };
 };
 
-struct Indent : public Name {
-    // Maybe add a parameter to how much?
-    std::string name() const { return " " + baseName; };
-};
-
 struct Text {
     std::function<std::string()> fName;
     std::string name() const { return fName(); };
 };
 
-
 struct Bool : public Name {
     bool& ref;
     std::string name() const { return (ref ? "X " : "O ") + baseName; }
-    void button_menu() const {ref = !ref;} // Toggles
+    void button_menu() const { ref = !ref; } // Toggles
 };
 // This version is too complex, and saving few bits is not worth
 // struct Bool : public Name {
@@ -134,21 +129,15 @@ struct Action : public Name {
     void button_menu() const {action();}
 };
 
-struct Custom : public Name {
-    std::function<void(bool)> change;
-    std::function<void()> action;
-    std::function<void()> render;
-};
-
 // NumberItem capture the user input and will be affected by up/down
 struct Number : public Name {
     std::function<int()> get;
     std::function<void(int)> change;
 
-    void capture_input() const {};
+    bool capture_input() const { return true; };
 
     std::string name() const { return std::to_string(get()) + " " + baseName; }
-    void button_updown(int v) const {change(v);}
+    void button_updown(int v) const { change(v); }
     void render(Display&) const;
 };
 template<typename T>
@@ -156,7 +145,7 @@ struct NumberRange : public Name {
     T& ref;
     std::pair<T,T> range; // Valid Range
 
-    void capture_input() const {};
+    bool capture_input() const { return true; };
 
     std::string name() const { return std::to_string(ref) + " " + baseName; }
     void button_updown(int v) const { 
@@ -179,7 +168,7 @@ struct NumberRange : public Name {
 struct DateTime : public Name {
     Time& mTime;
 
-    void capture_input() const {};
+    bool capture_input() const { return true; };
 
     void button_menu() const;
     void button_updown(int v) const;
@@ -189,6 +178,7 @@ struct DateTime : public Name {
 class Sub;
 class Menu;
 class If;
+class Indent;
 
 using Any = std::variant<
     Indent,
@@ -218,10 +208,19 @@ using Any = std::variant<
 //     // int index() const;
 // };
 
+
+struct Indent {
+    uint8_t mAmount;
+    std::vector<Any> mSub;
+
+    std::string name() const;
+    const Any& ref() const;
+};
+
 struct Sub : public Name {
     std::vector<Any> items;
 
-    void capture_input() const {};
+    bool capture_input() const { return true; };
     const Any* sub(uint8_t index) const;
     void button_menu() const;
     void button_updown(int b) const;
