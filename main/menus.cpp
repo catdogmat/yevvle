@@ -155,15 +155,16 @@ UI::Any Core::generateMenus() {
           mLora.startReceive();
         }));
       }},
-      UI::Action{"GPS Test", [&]{
+      UI::Action{"GPS Toggle", [&]{
         mTasks.emplace_back(std::async(std::launch::async, [&]{
-          mGps.read();
-          if (auto dateTime = mGps.mData.mDateTime) {
-            auto& dt = dateTime->mElements;
-            ESP_LOGE("gps", "received time %d/%d/%d %d:%d:%d", 
-              dt.Year, dt.Month, dt.Day,
-              dt.Hour, dt.Minute, dt.Second);
-          }
+          mGps.set(!mGps.isOn());
+          // mGps.read();
+          // if (auto dateTime = mGps.mData.mDateTime) {
+          //   auto& dt = dateTime->mElements;
+          //   ESP_LOGE("gps", "received time %d/%d/%d %d:%d:%d", 
+          //     dt.Year, dt.Month, dt.Day,
+          //     dt.Hour, dt.Minute, dt.Second);
+          // }
           // if (fix.valid.date)
           //   ESP_LOGE("gps", "received date %d:%d:%d", 
           //     fix.dateTime.hours, fix.dateTime.minutes, fix.dateTime.seconds);

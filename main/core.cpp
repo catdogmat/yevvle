@@ -47,6 +47,7 @@ Core::Core()
     // reset calibration to the ESP32
     mTime.calReset();
     mTime.getMinutesWest() = 60; // Default zone +1
+    mTime.readTime();
 
     // Recover Settings from Disk // TODO
     // load NVS and load settings
@@ -79,17 +80,21 @@ Core::Core()
     finishTasks();
 
     // Check GPS on a background task
-    if (HW::kHasGps && !mGps.mData.mLocation) {
+    if (HW::kHasGps && mGps.isOn() && !mGps.mData.mLocation) {
         mGps.read();
         if (auto datetime = mGps.mData.mDateTime) {
             mTime.setTime(datetime->mElements, true);
             // Roughtly adjust the centiseconds
             mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
         }
-        if (mGps.mData.mLocation)
+        if (mGps.mData.mLocation) {
             mGps.off();
-        else
-            setNextUpdate(10); // Check every 10s the GPS
+        } else {
+            // Check every 10s the GPS. Uses 20mA power.
+            // Pprefer to waste a few ms the ESP32 on, to early exit
+            // TODO: Never have the GPS on more than 1 minute if it does not Adquire
+            setNextUpdate(10);
+        }
     }
 
     // ESP_LOGE("boot","");
@@ -200,8 +205,20 @@ Core::Core()
         return 1;
     }();
 
-    // TODO: When there is an alarm, we need to wake up earlier
+    // Calc next full wake (alarms/NextUpdates) and how much to sleep
     auto nextFullWake = 60;
+    auto secondsWait = 60 - mNow.Second;
+    if (mNextUpdate) {
+        auto seconds = *mNextUpdate;
+        if (seconds < 60) {
+            secondsWait = seconds;
+            nextFullWake = mNow.Minute + 1; // Wake instantly
+        } else {
+            nextFullWake = mNow.Minute + seconds / 60;
+        }
+        kDSState.minutes = (*mNextUpdate + secondsWait) / 60;
+        ESP_LOGE("Early Wake", "minutes %d seconds %d", kDSState.minutes, secondsWait);
+    }
     auto firstMinutesSleep = stepSize - mNow.Minute % stepSize;
     auto nextPartialWake = firstMinutesSleep + mNow.Minute;
     // In case the step overflows, we need to chop it, and wake up earlier
@@ -218,9 +235,6 @@ Core::Core()
     if (kSettings.mUi.mDepth < 0) {
         kDSState.currentMinutes = mNow.Minute + firstMinutesSleep;
         kDSState.minutes = nextFullWake - mNow.Minute - firstMinutesSleep;
-        if (mNextUpdate) {
-            kDSState.minutes = (*mNextUpdate + mNow.Second + 1) / 60;
-        }
         // ESP_LOGE("", "min %d step %d wait %ld", kDSState.minutes, stepSize, kDSState.updateWait);
         kDSState.stepSize = stepSize;
         // Only trigger the wakeupstub if there is more than 1 minute left
@@ -228,12 +242,9 @@ Core::Core()
             if constexpr (HW::kHasDisplayBusyWake)
                 esp_sleep_enable_ext0_wakeup((gpio_num_t)HW::Display::Busy, 0);
             esp_set_deep_sleep_wake_stub(&wake_stub_deepsleep);
-        } else if (mNextUpdate) {
-            esp_sleep_enable_timer_wakeup(*mNextUpdate * 1'000'000);
-        } else {
-            auto nextMinute = (60 - mNow.Second) * 1'000'000 - mTime.getTimeval().tv_usec;
-            esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
         }
+        auto nextMinute = secondsWait * 1'000'000 - mTime.getTimeval().tv_usec;
+        esp_sleep_enable_timer_wakeup(nextMinute + (firstMinutesSleep - 1) * 60'000'000);
     } else {
         // Disable the wake stub and count a fix time
         esp_set_deep_sleep_wake_stub(NULL);
@@ -257,6 +268,9 @@ const UI::Any& Core::findUi() {
         std::visit([&](auto& e) {
             if constexpr (has_sub<decltype(e), uint8_t>::value) {
                 nextItem = e.sub(index);
+            }
+            if constexpr (has_ref<decltype(e)>::value) {
+                nextItem = &e.ref();
             }
         }, *item);
         if (nextItem == nullptr)
