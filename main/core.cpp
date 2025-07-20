@@ -64,8 +64,6 @@ Core::Core()
             mTime.setTime(time);
             mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
         }
-        // Start up the lora module listening ?
-        // mLora.startReceive();
     }));
 
     return true;
@@ -117,7 +115,7 @@ Core::Core()
         break;
     case ESP_SLEEP_WAKEUP_EXT1: // Used for LoRa reception
         // ESP_LOGE("lora", "ext1 wakeup");
-        mLora.receive();
+        mRadio.readLoraPck();
         break;
     case ESP_SLEEP_WAKEUP_EXT0: // Used for display busy wakeup
         ESP_LOGE("ext0", "wakeup ?"); // Should never be hit
@@ -350,12 +348,13 @@ void Core::NTPSync() {
   auto powerLock = Power::Lock(Power::Flag::Wifi);
 //   initArduino();
 
+//   WiFi.begin(kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
 //   WiFi.waitForConnectResult();
 
-//   settimeofday_cb([]() { // set callback to execute after time is retrieved
-//     time_t now = time(nullptr);
-//     setTime(now); // update time to TimeLib
-//   });
+// //   settimeofday_cb([]() { // set callback to execute after time is retrieved
+// //     time_t now = time(nullptr);
+// //     setTime(now); // update time to TimeLib
+// //   });
 //   configTime(0, 0, "pool.ntp.org");
 
 //   // get network time

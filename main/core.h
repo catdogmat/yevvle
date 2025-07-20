@@ -5,13 +5,16 @@
 
 #include "spi.h"
 #include "gps.h"
-#include "lora.h"
+#include "radio.h"
 #include "display.h"
 #include "watchface.h"
 #include "battery.h"
 #include "touch.h"
 #include "ui.h"
 #include "time.h"
+
+
+const std::pair<std::string, std::string> kWifiConfig;
 
 /* This is the primary class of the project.
  * It has the entry point from deepsleep as well as all
@@ -39,7 +42,7 @@ public:
     Spi mSpi;
     Display mDisplay;
     Gps mGps;
-    Lora mLora;
+    Radio mRadio;
     Touch mTouch;
 
     const tmElements_t& mNow;

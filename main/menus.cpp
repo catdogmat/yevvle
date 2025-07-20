@@ -35,6 +35,18 @@ std::vector<UI::Any> buildAlarms(Core& core) {
   return alarms;
 };
 
+std::vector<UI::Any> buildRadios() {
+  std::vector<UI::Any> radios;
+  for (auto& group : kSignals) {
+    UI::Menu menu{group.mName, {}};
+    for (auto& [name, seq] : group.mSequences) {
+      menu.items.emplace_back(UI::Action{name, [&]{ Radio::sendSignal(seq); }});
+    }
+    radios.push_back(menu);
+  }
+  return radios;
+};
+
 UI::Any Core::generateMenus() {
   return UI::Menu{"Main Menu", {
     UI::Menu{"Clock", {
@@ -108,18 +120,7 @@ UI::Any Core::generateMenus() {
       UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
       UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
     }},
-    UI::Menu{"Garage", {
-      UI::Action{"Up", [&]{
-        mTasks.emplace_back(std::async(std::launch::async, [&]{
-          mLora.sendOpen();
-        }));
-      }},
-      UI::Action{"Down", [&]{
-        mTasks.emplace_back(std::async(std::launch::async, [&]{
-          mLora.sendClose();
-        }));
-      }},
-    }},
+    UI::Menu{"Radio", buildRadios()},
     UI::Menu{"Test", {
       UI::Action{"Vib 2x75ms", [&]{
         mTasks.emplace_back(std::async(std::launch::async, []{
@@ -152,7 +153,7 @@ UI::Any Core::generateMenus() {
       }},
       UI::Action{"Lora Start Rcv", [&]{
         mTasks.emplace_back(std::async(std::launch::async, [&]{
-          mLora.startReceive();
+          mRadio.startReceive();
         }));
       }},
       UI::Action{"GPS Toggle", [&]{
@@ -216,7 +217,7 @@ UI::Any Core::generateMenus() {
       }},
     }},
     UI::Menu{"Test2", {
-      UI::Name{"Battery V"+std::to_string(mBattery.mCurVoltage)},
+      UI::Name{"Battery V "+std::to_string(mBattery.mCurVoltage)},
     }},
   }};
 };

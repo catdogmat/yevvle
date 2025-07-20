@@ -168,7 +168,7 @@ std::vector<Rect> DefaultWatchface::render() {
   }
 
   // Lora!
-  if (auto& pck = mCore.mLora.mPck) {
+  if (auto& pck = mCore.mRadio.mPck) {
     // Draw a white box
     mDisplay.writeFillRect(20, 90, 160, 70, 0);
     mDisplay.drawRect(22, 91, 158, 68, 1);

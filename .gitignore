@@ -28,3 +28,6 @@ sdkconfig.old
 
 # Ignore backup files
 *~
+
+# Ignore secret .cpp
+main/secrets.cpp
