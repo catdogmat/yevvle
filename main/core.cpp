@@ -1,6 +1,8 @@
 
 #include <fmt/format.h>
 
+#include "driver/rtc_io.h"
+
 #include "core.h"
 #include "deep_sleep.h"
 #include "power.h"
@@ -23,17 +25,17 @@ Core::Core()
         return false;
     sDone = true;
 
-#if HW_VERSION < 10
-    // Set all GPIOs to input that we are not using to avoid leaking power
-    // This is NEEDED
-    const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
-    for (int i = 0; i < GPIO_NUM_MAX; i++) {
-        if ((ignore >> i) & 0b1)
-            continue;
-        // ESP_LOGE("", "%d input", i);
-        pinMode(i, INPUT);
+    if constexpr (HW::kVersion < 10) {
+        // Set all GPIOs to input that we are not using to avoid leaking power
+        // This is NEEDED
+        const uint64_t ignore = 0b11110001000000110000100111000010; // Ignore some GPIOs due to resets
+        for (int i = 0; i < GPIO_NUM_MAX; i++) {
+            if ((ignore >> i) & 0b1)
+                continue;
+            // ESP_LOGE("", "%d input", i);
+            pinMode(i, INPUT);
+        }
     }
-#endif
 
     // For some reason, seems to be enabled on first boot
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
@@ -230,6 +232,8 @@ Core::Core()
     // ESP_LOGE("", "nextFullWake %d firstMinutesSleep %d nextPartialWake %d", nextFullWake, firstMinutesSleep, nextPartialWake);
     if constexpr (HW::kHasLora) {
         esp_sleep_enable_ext1_wakeup(1ULL << HW::Lora::Dio1, ESP_EXT1_WAKEUP_ANY_HIGH);
+        // Hold some pins to some values to avoid leaking current
+        rtc_gpio_hold_en((gpio_num_t)HW::Lora::Cs);
     }
 
     // We can only run wakeupstub when on watchface mode

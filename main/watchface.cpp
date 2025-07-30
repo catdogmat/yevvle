@@ -104,7 +104,7 @@ void Watchface::draw() {
     copyMinutes2Buffer();
     mDisplay.writeAllAndRefresh();
     mDisplay.writeAll(); // We need to write the other buffer for partial updates
-    last.mMinuteU[0] = mNow.Minute % 10; // Both buffers are set
+    last.mMinuteU[0] = last.mMinuteU[1] = mNow.Minute % 10; // Both buffers are set
   } else {
     // Pass 1: Copy all to display
     for (const auto& c : composables)      
@@ -123,10 +123,9 @@ void Watchface::draw() {
     // change it next update, saving a few 300 * 8 * 0.05us = >106us = 200us;
   }
 
-
   // Store the values for next round
   last.mValid = true;
   last.mMinuteD = mNow.Minute / 10;
-  last.mMinuteU[1] = last.mMinuteU[0]; // Move the front to Back
-  last.mMinuteU[0] = mNow.Minute % 10;
+  last.mMinuteU[0] = mNow.Minute % 10; // Update the front
+  std::swap(last.mMinuteU[0], last.mMinuteU[1]);
 }

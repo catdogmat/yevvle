@@ -77,6 +77,7 @@ Radio::Radio() {
     kHal->pinMode(kModule->getGpio(), kHal->GpioModeInput);
     kModule->init();
   }
+  rtc_gpio_hold_dis((gpio_num_t)HW::Lora::Cs);
 }
 
 void Radio::startReceive()
@@ -85,7 +86,6 @@ void Radio::startReceive()
     return;
 
   // ESP_LOGE("lora", "listening");
-  rtc_gpio_hold_dis((gpio_num_t)HW::Lora::Cs);
 
   // If we did a deep sleep, we need to call again begin() to reset the module
   kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
@@ -106,9 +106,6 @@ void Radio::sleep()
 
   kRadio->sleep(false); // ~0.3 uA @ 3.3V
   // kRadio->sleep(); // ~0.7 uA @3.3V
-
-  // Hold some pins to some values to avoid leaking current
-  rtc_gpio_hold_en((gpio_num_t)HW::Lora::Cs);
 }
 
 void Radio::readLoraPck() {

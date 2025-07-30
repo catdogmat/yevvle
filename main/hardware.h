@@ -13,7 +13,7 @@
 enum class HW_chips {ESP_32, ESP_32_S3};
 
 // Original ESP32-PICO-D4 board based off from Watchy
-// there was a previous 2 revisions with wrong wiring/touch/chip
+// there were 2 previous revisions with wrong wiring/touch/chip
 // that I am not even going to ever cover with code
 struct HW_1 {
     constexpr static uint8_t kVersion = 1;
@@ -114,6 +114,27 @@ struct HW_3 : public HW_2 {
     constexpr static uint8_t kSpeakerPin = 22;
     constexpr static uint8_t kVibratorPin = 21;
     constexpr static uint8_t kVoltageSelectPin = 13; // RTC required
+};
+
+// Minor changes to accomodate HW_3 issues into a smaller board
+struct HW_4 : public HW_3 {
+    constexpr static uint8_t kVersion = 4;
+    // constexpr static bool kHasLora = true;
+    // constexpr static bool kHasGps = true;
+    // constexpr static bool kHasDisplayBusyWake = true;
+
+    struct Touch {
+        enum PadNames {BotR /*Down*/, TopR /*Up*/, TopL /*Menu*/, BotL /*Back*/};
+        constexpr static std::array<uint8_t, 4> Pad = {{4, 6, 7, 2}};
+    };
+
+    struct Gps {
+        constexpr static uint8_t Rx = 39; // Input only pin
+        constexpr static uint8_t Vcc = 12; // RTC required
+        constexpr static auto BaudRate = 115200;
+    };
+
+    constexpr static uint8_t kVoltageSelectPin = 4; // RTC required
 };
 
 // New board based on ESP32-S3-FN8

@@ -71,62 +71,63 @@ std::vector<Rect> DefaultWatchface::render() {
     rects.emplace_back(92, 30, 12, 35);
   }
 
-  // Hour / Moon / Sun
+  // Hour
   if (redraw || store.mHour != mNow.Hour) {
     store.mHour = mNow.Hour;
     mDisplay.setFont(&DSEG7_Classic_Bold_53);
     mDisplay.setCursor(4, 73);
     mDisplay.printf("%02d", mNow.Hour);
     rects.emplace_back(7, 20, 80, 53);
+  }
 
-    // Moon
-    if (config.mMoon) {
-      bool color = mSettings.mConst.mDisplay.mInvert;
-      auto frac = getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec);
-      mDisplay.drawMoon(frac, 50, 150, 30, !color, color);
-      // ESP_LOGE("frac", "%f", frac);
-      constexpr auto center = std::pair{50, 150};
-      constexpr auto radius = 30;
+  // Moon
+  if (config.mMoon) { // FIXME: Always update? Rarely changes
+    bool color = mSettings.mConst.mDisplay.mInvert;
+    auto frac = getIlluminatedFractionOfMoon(mTime.getTimeval().tv_sec);
+    mDisplay.drawMoon(frac, 50, 150, 30, !color, color);
+    // ESP_LOGE("frac", "%f", frac);
+    constexpr auto center = std::pair{50, 150};
+    constexpr auto radius = 30;
 
-      mDisplay.drawCircle(center.first, center.second, 30, 1);
+    mDisplay.drawCircle(center.first, center.second, 30, 1);
+    mDisplay.setFont(NULL);
+    mDisplay.setCursor(40, 185);
+    mDisplay.printf("%.2f", frac);
+
+    rects.emplace_back(center.first - radius - 5, center.second - radius - 5, (radius + 1) * 2 + 10, radius * 2 + 25);
+  }
+
+  // Sun
+  if (config.mSun) { // FIXME: Always update? Rarely changes
+    mDisplay.drawCircleHelper(145, 170, 35, 0b11, 1);
+
+    auto& location = mCore.mGps.mData.mLocation;
+    if (location)
+    {
+      SunSet sunset(location->mLat, location->mLon, mSettings.mConst.mTime.mMinutesWest / 60.0);
+      auto& elements = mTime.getElements();
+      sunset.setCurrentDate(elements.Year + 1970, elements.Month, elements.Day);
+      uint16_t rise = sunset.calcSunrise() + 0.5; // For the rounding
+      uint16_t set = sunset.calcSunset() + 0.5; // For the rounding
+      // Current % in the day
+      float perc = 1.f * ((elements.Hour * 60 + elements.Minute) - rise) / (set - rise);
+      // ESP_LOGE("perc", "%f", perc);
+
       mDisplay.setFont(NULL);
-      mDisplay.setCursor(40, 185);
-      mDisplay.printf("%.2f", frac);
+      mDisplay.setCursor(110, 175);
+      mDisplay.printf("%02d:%02d", rise / 60, rise % 60);
+      mDisplay.setCursor(155, 175);
+      mDisplay.printf("%02d:%02d", set / 60, set % 60);
 
-      rects.emplace_back(center.first - radius, center.second - radius, (radius + 1) * 2, radius * 2 + 15);
+      if (perc > 0 && perc < 1)
+        mDisplay.fillCircle(145 - 35 * cos(perc * PI), 170 - 35 * sin(perc * PI), 5, 1);
+    } else {
+      mDisplay.setFont(NULL);
+      mDisplay.setCursor(110, 175);
+      mDisplay.printf("No GPS for Sun");
     }
-    // Sun
-    if (config.mSun) {
-      mDisplay.drawCircleHelper(145, 170, 35, 0b11, 1);
 
-      auto& location = mCore.mGps.mData.mLocation;
-      if (location)
-      {
-        SunSet sunset(location->mLat, location->mLon, mSettings.mConst.mTime.mMinutesWest / 60.0);
-        auto& elements = mTime.getElements();
-        sunset.setCurrentDate(elements.Year + 1970, elements.Month, elements.Day);
-        uint16_t rise = sunset.calcSunrise() + 0.5; // For the rounding
-        uint16_t set = sunset.calcSunset() + 0.5; // For the rounding
-        // Current % in the day
-        float perc = 1.f * ((elements.Hour * 60 + elements.Minute) - rise) / (set - rise);
-        // ESP_LOGE("perc", "%f", perc);
-
-        mDisplay.setFont(NULL);
-        mDisplay.setCursor(110, 175);
-        mDisplay.printf("%02d:%02d", rise / 60, rise % 60);
-        mDisplay.setCursor(155, 175);
-        mDisplay.printf("%02d:%02d", set / 60, set % 60);
-
-        if (perc > 0 && perc < 1)
-          mDisplay.fillCircle(145 - 35 * cos(perc * PI), 170 - 35 * sin(perc * PI), 5, 1);
-      } else {
-        mDisplay.setFont(NULL);
-        mDisplay.setCursor(110, 175);
-        mDisplay.printf("No GPS for Sun");
-      }
-
-      rects.emplace_back(100, 120, 95, 70);
-    }
+    rects.emplace_back(100, 120, 95, 70);
   }
 
   // Date
