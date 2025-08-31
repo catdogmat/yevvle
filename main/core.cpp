@@ -63,6 +63,9 @@ Core::Core()
             tmElements_t time{.Second=0, .Minute=9, .Hour=23, .Wday=0, .Day=7, .Month=7, .Year=2025-1970};
             mTime.setTime(time);
             mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
+
+            // Trigger NTP, if wifi is available, it will set time
+            NTPSync();
         }
     }));
 
@@ -348,24 +351,24 @@ void Core::NTPSync() {
   // Select default voltage 2.9V/3.3V for WiFi
   // We need Arduino for this (WiFi + NTP)
   auto powerLock = Power::Lock(Power::Flag::Wifi);
-//   initArduino();
+  initArduino();
 
-//   WiFi.begin(kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
-//   WiFi.waitForConnectResult();
+  WiFi.begin(kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
+  WiFi.waitForConnectResult();
 
-// //   settimeofday_cb([]() { // set callback to execute after time is retrieved
-// //     time_t now = time(nullptr);
-// //     setTime(now); // update time to TimeLib
-// //   });
-//   configTime(0, 0, "pool.ntp.org");
+//   settimeofday_cb([]() { // set callback to execute after time is retrieved
+//     time_t now = time(nullptr);
+//     setTime(now); // update time to TimeLib
+//   });
+  configTime(0, 0, "pool.ntp.org");
 
-//   // get network time
-//   struct tm timeinfo;
-//   if(!getLocalTime(&timeinfo)){
-//     ESP_LOGE("NTP", "Failed to obtain time");
-//     return;
-//   }
-//   delay(5'000);
+  // get network time
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    ESP_LOGE("NTP", "Failed to obtain time");
+    return;
+  }
+  delay(5'000);
 
   ESP_LOGE("NTP", "done");
 }
