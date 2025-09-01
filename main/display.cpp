@@ -145,8 +145,8 @@ void Display::_setCustomLut(const DisplayMode& mode) {
       return SSD1681_LIGHTMYINK_CUSTOM_6_1;
     if (mode == QUICK)
       return SSD1681_LIGHTMYINK_CUSTOM_2_1;
-    if (mode == REPAIR)
-      return SSD1681_LIGHTMYINK_REPAIR;
+    //if (mode == REPAIR)
+    //  return SSD1681_LIGHTMYINK_REPAIR;
     return SSD1681_LIGHTMYINK_CUSTOM_6_1;
     // Other possible LUTS to use
     // auto& lut = SSD1681_WAVESHARE_1IN54_V2_LUT_FULL_REFRESH;

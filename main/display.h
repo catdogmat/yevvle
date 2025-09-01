@@ -20,7 +20,7 @@ enum DisplayMode {
   FAST,
   GOOD,  // 6_1 // Might burn the display after days/weeks...
   QUICK, // 2_1
-  REPAIR, // Use overvoltage, and keep it long time one direction then the other
+  // REPAIR, // Use overvoltage, and keep it long time one direction then the other
 };
 
 struct DisplaySettings {

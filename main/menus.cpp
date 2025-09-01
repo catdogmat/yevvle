@@ -175,7 +175,7 @@ UI::Any Core::generateMenus() {
       }},
       UI::Action{"Display Restore", [&]{
         auto oldMode = mDisplay.getRefreshMode();
-        mDisplay.setRefreshMode(DisplayMode::REPAIR);
+        // mDisplay.setRefreshMode(DisplayMode::REPAIR);
         bool inverted = false;
         while (true) {
           mDisplay.setInverted(inverted = !inverted);
