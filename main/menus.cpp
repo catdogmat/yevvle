@@ -90,6 +90,12 @@ UI::Any Core::generateMenus() {
       }},
       UI::Menu{"Alarms", buildAlarms(*this)},
       UI::Action{"NTP", [&]{ NTPSync(); }},
+      UI::Action{"GPS Resync", [&]{
+        if (HW::kHasGps && !mGps.isOn()) {
+           mGps.mData.mLocation.reset();
+           mGps.on();
+        }
+      }},
     }},
     UI::Menu{"Watchface", {
       // UI::Loop<int>{"Style",
@@ -116,7 +122,7 @@ UI::Any Core::generateMenus() {
     }},
     UI::Menu{"Touch", {
       UI::Bool{"Haptic", kSettings.mTouch.mHaptic},
-      UI::NumberRange<int8_t>{"Sensitivity", kSettings.mTouch.mSensitivity, {20, 70}},
+      UI::NumberRange<int8_t>{"Sensitivity", kSettings.mTouch.mSensitivity, {40, 80}},
       UI::Loop<MeasureRate>{"Menu Rate", kSettings.mTouch.mRate[0]},
       UI::Loop<MeasureRate>{"Watch Rate", kSettings.mTouch.mRate[1]},
     }},

@@ -25,9 +25,9 @@ struct TouchSettings {
   // More cycles more accurate, and more power
   // More often checks, also more power
   MeasureCycles mCycles[2] = {_31ms, _31ms};
-  MeasureRate mRate[2] = {_500ms, _1s};
+  MeasureRate mRate[2] = {_250ms, _1s};
   bool mHaptic {false};
-  int8_t mSensitivity {50};
+  int8_t mSensitivity {60};
   std::array<uint8_t, 4> mMap{{0,1,2,3}};
 
   struct Setup {

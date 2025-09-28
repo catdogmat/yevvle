@@ -16,6 +16,8 @@
 
 RTC_DATA_ATTR Settings kSettings;
 
+auto wakeup_reason = esp_sleep_get_wakeup_cause();
+
 Core::Core()
 : mTime{kSettings.mTime}
 , mBattery{kSettings.mBattery}
@@ -100,9 +102,8 @@ Core::Core()
         }
     }
 
-    // ESP_LOGE("boot","");
     // Wake up reason affects how to proceed
-    auto wakeup_reason = esp_sleep_get_wakeup_cause();
+    ESP_LOGE("boot","reason %d", wakeup_reason);
     switch (wakeup_reason) {
     case ESP_SLEEP_WAKEUP_TOUCHPAD: { // Touch!
         if (kSettings.mTouch.mHaptic)
@@ -119,7 +120,7 @@ Core::Core()
         kSettings.mTouchWatchDog = true;
         break;
     case ESP_SLEEP_WAKEUP_EXT1: // Used for LoRa reception
-        // ESP_LOGE("lora", "ext1 wakeup");
+        ESP_LOGE("lora", "ext1 wakeup");
         mRadio.readLoraPck();
         break;
     case ESP_SLEEP_WAKEUP_EXT0: // Used for display busy wakeup

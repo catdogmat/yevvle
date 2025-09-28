@@ -7,7 +7,7 @@
 #if CONFIG_IDF_TARGET_ESP32S3
 #define HW_VERSION 10 // First WIP board
 #else
-#define HW_VERSION 3 // Last board fully working
+#define HW_VERSION 4 // Last board fully working
 #endif
 
 enum class HW_chips {ESP_32, ESP_32_S3};
@@ -119,13 +119,14 @@ struct HW_3 : public HW_2 {
 // Minor changes to accomodate HW_3 issues into a smaller board
 struct HW_4 : public HW_3 {
     constexpr static uint8_t kVersion = 4;
-    // constexpr static bool kHasLora = true;
-    // constexpr static bool kHasGps = true;
-    // constexpr static bool kHasDisplayBusyWake = true;
+    // constexpr static bool kHasLora = false;
+    // constexpr static bool kHasGps = false;
+    // constexpr static bool kHasDisplayBusyWake = false;
+    // constexpr static bool kHasLowVoltage = false;
 
     struct Touch {
         enum PadNames {BotR /*Down*/, TopR /*Up*/, TopL /*Menu*/, BotL /*Back*/};
-        constexpr static std::array<uint8_t, 4> Pad = {{4, 6, 7, 2}};
+        constexpr static std::array<uint8_t, 4> Pad = {{7, 2, 4, 6}};
     };
 
     struct Gps {

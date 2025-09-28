@@ -39,9 +39,9 @@ public:
     Battery mBattery;
     const bool mFirstTimeBoot;
     Spi mSpi;
+    Radio mRadio;
     Display mDisplay;
     Gps mGps;
-    Radio mRadio;
     Touch mTouch;
 
     const tmElements_t& mNow;

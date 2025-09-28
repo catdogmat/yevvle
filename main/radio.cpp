@@ -29,7 +29,7 @@ OOK::~OOK() {
 }
 
 void Signal::BasicOOK::send() const {
-  auto ook = OOK(mBitMicros, mFrequency);
+  auto ook = OOK(mBitMicros, mFrequency, -9, 0);
   for(auto i=0; i<mRepetitions; i++) {
     ook.transmit(mPattern);
     delayMicroseconds(mDelayRepetitions);
@@ -69,7 +69,7 @@ Radio::Radio() {
     kHal.emplace(SPI, *kSpi);
     kModule.emplace(&kHal.value(), HW::Lora::Cs, HW::Lora::Dio1, HW::Lora::Res, HW::Lora::Busy);
     kRadio.emplace(&kModule.value());
-    kRadio->XTAL = true;
+    // kRadio->XTAL = false; // It is false in the module used
     kRadio->begin(434.0, 125.0, 9, 7, 0x12, 10, 8, 0, false);
     sleep();
   } else {
@@ -95,7 +95,9 @@ void Radio::startReceive()
 
 void Radio::sendSignal(const Signal::Sequence& seq) {
   std::visit([&](auto& e) {
+    ESP_LOGD("", "Sending signal");
     e.send();
+    ESP_LOGD("", "Sending signal done");
   }, seq);
 }
 
