@@ -13,8 +13,7 @@
 #include "ui.h"
 #include "time.h"
 
-
-const std::pair<std::string, std::string> kWifiConfig;
+extern const std::pair<std::string, std::string> kWifiConfig;
 
 /* This is the primary class of the project.
  * It has the entry point from deepsleep as well as all

@@ -75,6 +75,8 @@ struct HW_2 : public HW_1 {
 
 // Added Lora/GPS to PICOD4, reshuffle pins
 // Use as much as possible INPUT ONLY pins 34-39
+// NOTE: I never build a final version out of this HW
+//       since it didn´t fit on a small case
 struct HW_3 : public HW_2 {
     constexpr static uint8_t kVersion = 3;
     constexpr static bool kHasLora = true;

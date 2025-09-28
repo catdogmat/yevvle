@@ -353,6 +353,7 @@ void Core::NTPSync() {
   auto powerLock = Power::Lock(Power::Flag::Wifi);
   initArduino();
 
+  // ESP_LOGE("Wifi", "%s %s", kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
   WiFi.begin(kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
   WiFi.waitForConnectResult();
 
