@@ -10,7 +10,7 @@ namespace {
         ui.mState[ui.mDepth] = (ui.mState[ui.mDepth] + size + add) % size;
     }
     int curIndex(std::size_t size) {
-        return (ui.mState[ui.mDepth] + size) % std::max(1u, size);
+        return ui.mState[ui.mDepth] >= size ? 0 : ui.mState[ui.mDepth];
     }
 }
 
@@ -52,7 +52,8 @@ void Sub::button_menu() const {
         if constexpr (has_capture_input<decltype(e)>::value)
             captureInput = e.capture_input();
         if (captureInput) {
-            ui.mDepth++; // Increase depth and let the sub handle it
+            // Increase depth and let the sub handle it
+            ui.mState[ui.mDepth++] = index();
         } else if constexpr (has_button<decltype(e)>::value) {
             e.button(Touch::MENU);
         } else if constexpr (has_button_menu<decltype(e)>::value) {
