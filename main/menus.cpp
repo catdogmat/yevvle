@@ -90,10 +90,16 @@ UI::Any Core::generateMenus() {
       }},
       UI::Menu{"Alarms", buildAlarms(*this)},
       UI::Action{"NTP", [&]{ NTPSync(); }},
-      UI::Action{"GPS Resync", [&]{
-        if (HW::kHasGps && !mGps.isOn()) {
-           mGps.mData.mLocation.reset();
-           mGps.on();
+      UI::Action{(HW::kHasGps ? (mGps.isOn() ? "GPS Off" : "GPS resync") : "GPS not present"), [&]{
+        if (HW::kHasGps) {
+          if (mGps.isOn()) {
+            mGps.off();
+            mGps.mData.mLocation = Gps::Data::Location{.mLat=51.438412, .mLon=-0.511787};
+          } else {
+            mGps.mData.mLocation.reset();
+            mGps.on();
+          }
+          regenerateMenus();
         }
       }},
     }},
@@ -160,24 +166,6 @@ UI::Any Core::generateMenus() {
       UI::Action{"Lora Start Rcv", [&]{
         mTasks.emplace_back(std::async(std::launch::async, [&]{
           mRadio.startReceive();
-        }));
-      }},
-      UI::Action{"GPS Toggle", [&]{
-        mTasks.emplace_back(std::async(std::launch::async, [&]{
-          mGps.set(!mGps.isOn());
-          // mGps.read();
-          // if (auto dateTime = mGps.mData.mDateTime) {
-          //   auto& dt = dateTime->mElements;
-          //   ESP_LOGE("gps", "received time %d/%d/%d %d:%d:%d", 
-          //     dt.Year, dt.Month, dt.Day,
-          //     dt.Hour, dt.Minute, dt.Second);
-          // }
-          // if (fix.valid.date)
-          //   ESP_LOGE("gps", "received date %d:%d:%d", 
-          //     fix.dateTime.hours, fix.dateTime.minutes, fix.dateTime.seconds);
-          // if (fix.valid.location)
-          //   ESP_LOGE("gps", "received loc %f : %f ", fix.latitude(), fix.longitude());
-
         }));
       }},
       UI::Action{"Light toggle", [&]{
