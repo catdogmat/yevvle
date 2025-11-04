@@ -260,6 +260,8 @@ Core::Core()
     // Who is setting this to ON manually ?? Display + LightSleep?
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
 
+    mTouch.clear(); // Clear the mask just before entering the sleep
+
     esp_deep_sleep_disable_rom_logging();
     esp_deep_sleep_start();
     ESP_LOGE("deepSleep", "never reach!");

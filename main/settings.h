@@ -12,7 +12,7 @@ struct Settings {
 
     struct Hourly {
         bool mBeep {false};
-        bool mVib {true};
+        bool mVib {false};
         int8_t mFirst {8};
         int8_t mLast {22};
     } mHourly;
