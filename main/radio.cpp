@@ -17,19 +17,20 @@ OOK::OOK(uint32_t bitUsDuration, float freq, int8_t minPower, int8_t maxPower)
 {
   if (!kRadio)
     return;
-  if (int16_t err = kRadio->beginFSK(freq)) {
+  if (int16_t err = kRadio->beginFSK(freq, 4.8f, 5.f, 156.2f, mMinPower)) {
     ESP_LOGE("Radio", "OOK error: %d", err);
   }
-  kRadio->setFrequency(freq);
+  // kRadio->setFrequency(freq); // Initially set to correct freq already
   kRadio->transmitDirect();
-  kRadio->setOutputPower(mMinPower);  // Initially set to low
+  // kRadio->setOutputPower(mMinPower);  // Initially set to low
 }
 OOK::~OOK() {
   Radio::sleep();
 }
 
 void Signal::BasicOOK::send() const {
-  auto ook = OOK(mBitMicros, mFrequency, -9, 0);
+  // auto ook = OOK(mBitMicros, mFrequency, -9, 22); // Custom power transmission
+  auto ook = OOK(mBitMicros, mFrequency);
   for(auto i=0; i<mRepetitions; i++) {
     ook.transmit(mPattern);
     delayMicroseconds(mDelayRepetitions);
