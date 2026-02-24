@@ -56,7 +56,7 @@ Core::Core()
     // Recover Settings from Disk // TODO
     // load NVS and load settings
 
-    // Queue the rest of the first boot for later (GPS, LORA)
+    // Queue the rest of the first boot for later (GPS, LORA, NTP, Touch)
     mTasks.emplace_back(std::async(std::launch::deferred, [&]{
         // Delay boot, try to get GPS location, to setup time/location
         if constexpr (HW::kHasGps) {
@@ -71,6 +71,9 @@ Core::Core()
             // Trigger NTP, if wifi is available, it will set time
             NTPSync();
         }
+
+        // Set up the touch, not enable it yet
+        mTouch.setUp(kSettings.mUi.mDepth < 0);
     }));
 
     return true;
@@ -130,6 +133,9 @@ Core::Core()
         ESP_LOGE("", "boot %lu unkown wakeup reason %d", micros(), wakeup_reason);
         break;
     }
+
+    // Re-set up the touch if settings have changed
+    mTouch.setUp(kSettings.mUi.mDepth < 0);
 
     // Beep conditions
     if (mNow.Minute == 0
@@ -191,7 +197,7 @@ Core::Core()
     // Finish display & pending tasks, then setup touch
     mDisplay.hibernate();
     finishTasks();
-    mTouch.setUp(kSettings.mUi.mDepth < 0);
+    mTouch.enable();
 
     // Calculate stepsize based on battery level or on battery save mode
     auto stepSize = [&] {
