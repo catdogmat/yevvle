@@ -5,7 +5,7 @@
 #include "driver/gpio.h"
 #include "Arduino.h"
 
-void Peripherals::vibrator(std::vector<int> pattern) {
+void Peripherals::vibrator(const std::vector<int>& pattern) {
   constexpr const gpio_config_t kConf = {
     .pin_bit_mask = (1ULL<<HW::kVibratorPin),
     .mode = GPIO_MODE_OUTPUT,
@@ -34,6 +34,20 @@ struct Speaker {
 
   Power::Lock powerLock = Power::Lock(Power::Flag::Speaker);
 
+  // Select resolution based on the frequency values, not to overflow or underflow divisor
+  static ledc_timer_bit_t calc_resolution(uint32_t freq) {
+    if (freq < 64) return LEDC_TIMER_10_BIT;
+    if (freq < 128) return LEDC_TIMER_9_BIT;
+    if (freq < 256) return LEDC_TIMER_8_BIT;
+    if (freq < 512) return LEDC_TIMER_7_BIT;
+    if (freq < 1024) return LEDC_TIMER_6_BIT;
+    if (freq < 2 * 1024) return LEDC_TIMER_5_BIT;
+    if (freq < 4 * 1024) return LEDC_TIMER_4_BIT;
+    if (freq < 8 * 1024) return LEDC_TIMER_3_BIT;
+    if (freq < 16 * 1024) return LEDC_TIMER_2_BIT;
+    return LEDC_TIMER_1_BIT;
+  }
+
   Speaker() {
     // Enable light sleep while Speaker active
     esp_sleep_pd_config(ESP_PD_DOMAIN_RC_FAST, ESP_PD_OPTION_ON);
@@ -58,20 +72,6 @@ struct Speaker {
   ~Speaker() {
     stop();
     esp_sleep_pd_config(ESP_PD_DOMAIN_RC_FAST, ESP_PD_OPTION_AUTO);
-  }
-
-  // Select resolution based on the frequency values, not to overflow or underflow divisor
-  ledc_timer_bit_t calc_resolution(uint32_t freq) {
-    if (freq < 64) return LEDC_TIMER_10_BIT;
-    if (freq < 128) return LEDC_TIMER_9_BIT;
-    if (freq < 256) return LEDC_TIMER_8_BIT;
-    if (freq < 512) return LEDC_TIMER_7_BIT;
-    if (freq < 1024) return LEDC_TIMER_6_BIT;
-    if (freq < 2 * 1024) return LEDC_TIMER_5_BIT;
-    if (freq < 4 * 1024) return LEDC_TIMER_4_BIT;
-    if (freq < 8 * 1024) return LEDC_TIMER_3_BIT;
-    if (freq < 16 * 1024) return LEDC_TIMER_2_BIT;
-    return LEDC_TIMER_1_BIT;
   }
 
   void set(uint32_t freq) {
@@ -99,7 +99,7 @@ struct Speaker {
   }
 };
 
-void Peripherals::speaker(std::vector<std::pair<int, int>> pattern) {
+void Peripherals::speaker(const std::vector<std::pair<int, int>>& pattern) {
   Speaker speaker;
 
   for(auto& [note, duration] : pattern) {

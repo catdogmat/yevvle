@@ -89,21 +89,23 @@ Core::Core()
 
     // Check GPS on a background task
     if (HW::kHasGps && mGps.isOn() && !mGps.mData.mLocation) {
-        mGps.read();
-        if (auto datetime = mGps.mData.mDateTime) {
-            mTime.setTime(datetime->mElements, true);
-            // Roughtly adjust the centiseconds
-            mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
-        }
-        if (mGps.mData.mLocation || mGps.mData.mTimeOn >= Gps::kMaxTimeGpsOn) {
-            mGps.off();
-        } else {
-            // Check every 10s the GPS. Uses 20mA power.
-            // Pprefer to waste a few ms the ESP32 on, to early exit
-            // Never have the GPS on more than 1 minute if it does not Adquire
-            setNextUpdate(10);
-            mGps.mData.mTimeOn = mGps.mData.mTimeOn.value_or(std::chrono::seconds(0)) + Gps::kGpsUpdateRate;
-        }
+        mTasks.emplace_back(std::async(std::launch::async, [&]{
+            mGps.read();
+            if (auto datetime = mGps.mData.mDateTime) {
+                mTime.setTime(datetime->mElements, true);
+                // Roughtly adjust the centiseconds
+                mTime.adjustTime(timeval{.tv_sec=0, .tv_usec=datetime->mCentiSeconds * 10'000});
+            }
+            if (mGps.mData.mLocation || mGps.mData.mTimeOn >= Gps::kMaxTimeGpsOn) {
+                mGps.off();
+            } else {
+                // Check every 10s the GPS. Uses 20mA power.
+                // Pprefer to waste a few ms the ESP32 on, to early exit
+                // Never have the GPS on more than 1 minute if it does not Adquire
+                setNextUpdate(10);
+                mGps.mData.mTimeOn = mGps.mData.mTimeOn.value_or(std::chrono::seconds(0)) + Gps::kGpsUpdateRate;
+            }
+        }));
     }
 
     // Wake up reason affects how to proceed
