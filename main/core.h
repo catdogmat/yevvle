@@ -11,6 +11,7 @@
 #include "battery.h"
 #include "touch.h"
 #include "ui.h"
+#include "secrets.h"
 #include "time.h"
 
 extern const std::pair<std::string, std::string> kWifiConfig;

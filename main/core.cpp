@@ -369,8 +369,11 @@ void Core::NTPSync() {
   auto powerLock = Power::Lock(Power::Flag::Wifi);
   initArduino();
 
-  // ESP_LOGE("Wifi", "%s %s", kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
-  WiFi.begin(kWifiConfig.first.c_str(), kWifiConfig.second.c_str());
+  if (kWifiNetworks.empty())
+    return;
+
+  // ESP_LOGE("Wifi", "%s %s", kWifiNetworks[0].mSsid.c_str(), kWifiNetworks[0].mPswd.c_str());
+  WiFi.begin(kWifiNetworks[0].mSsid.c_str(), kWifiNetworks[0].mPswd.c_str());
   WiFi.waitForConnectResult();
 
 //   settimeofday_cb([]() { // set callback to execute after time is retrieved
