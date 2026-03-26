@@ -2,7 +2,6 @@ set(includedirs
 )
 
 set(requires
-    arduino
     WiFiManager
     NTPClient
     ArduinoJson

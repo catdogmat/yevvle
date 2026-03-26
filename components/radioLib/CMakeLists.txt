@@ -6,7 +6,7 @@ set(requires
 )
 
 set(privrequires
-    arduino
+    arduino-esp32
 )
 
 set(srcs
