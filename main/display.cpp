@@ -51,7 +51,7 @@ void Display::_endTransfer()
 
 void Display::_transfer(uint8_t value)
 {
-  SPI.transfer(value);
+  SPI.write(value);
 }
 
 void Display::_transfer(const uint8_t* value, size_t size)
@@ -62,7 +62,7 @@ void Display::_transfer(const uint8_t* value, size_t size)
 void Display::_transferCommand(uint8_t c)
 {
   gpio_set_level((gpio_num_t)HW::Display::Dc, LOW);
-  SPI.transfer(c);
+  SPI.write(c);
   gpio_set_level((gpio_num_t)HW::Display::Dc, HIGH);
 }
 
