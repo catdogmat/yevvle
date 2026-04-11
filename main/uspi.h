@@ -93,12 +93,13 @@ namespace uSpi {
         dev.cmd.update = 1;
         while (dev.cmd.update);
 #endif
-        dev.cmd.usr = 1;
-        while (dev.cmd.usr); // Wait till previous commands have finished
+        dev.cmd.usr = 1; // Submit command
 
         data += c_longs;
         longs -= c_longs;
         len -= c_len;
+        // Faster to wait here (-10us)
+        while (dev.cmd.usr); // Wait till previous commands have finished
     }
   }
 
