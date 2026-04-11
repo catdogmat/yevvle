@@ -462,13 +462,14 @@ void Display::drawPixel(int16_t x, int16_t y, uint16_t color)
       y = HEIGHT - y - 1;
       break;
   }
-  auto& ptr = buffer[x / 8 + y * WB_BITMAP];
+  auto& ptr = buffer[(x >> 3) + y * WB_BITMAP];
+  auto mask = 1 << (7 - (x & 7));
   if (color)
-    ptr |= 1 << (7 - x % 8);
+    ptr |= mask;
   else
-    ptr &= ~(1 << (7 - x % 8));
+    ptr &= ~mask;
+  // ptr = (ptr & ~mask) | (-(color != 0) & mask); // Alternative
 }
-
 
 /**************************************************************************/
 /*!
@@ -593,20 +594,19 @@ void Display::drawFastHLine(int16_t x, int16_t y, int16_t w,
 void Display::drawFastRawVLine(int16_t x, int16_t y, int16_t h,
                                   uint16_t color) {
   // x & y already in raw (rotation 0) coordinates, no need to transform.
-  int16_t row_bytes = ((WIDTH + 7) / 8);
-  uint8_t *ptr = &buffer[(x / 8) + y * row_bytes];
+  uint8_t *ptr = &buffer[(x >> 3) + y * WB_BITMAP];
 
   if (color > 0) {
     uint8_t bit_mask = (0x80 >> (x & 7));
     for (int16_t i = 0; i < h; i++) {
       *ptr |= bit_mask;
-      ptr += row_bytes;
+      ptr += WB_BITMAP;
     }
   } else {
     uint8_t bit_mask = ~(0x80 >> (x & 7));
     for (int16_t i = 0; i < h; i++) {
       *ptr &= bit_mask;
-      ptr += row_bytes;
+      ptr += WB_BITMAP;
     }
   }
 }
@@ -623,8 +623,7 @@ void Display::drawFastRawVLine(int16_t x, int16_t y, int16_t h,
 void Display::drawFastRawHLine(int16_t x, int16_t y, int16_t w,
                                   uint16_t color) {
   // x & y already in raw (rotation 0) coordinates, no need to transform.
-  int16_t rowBytes = ((WIDTH + 7) / 8);
-  uint8_t *ptr = &buffer[(x / 8) + y * rowBytes];
+  uint8_t *ptr = &buffer[(x >> 3) + y * WB_BITMAP];
   size_t remainingWidthBits = w;
 
   // check to see if first byte needs to be partially filled
@@ -647,7 +646,7 @@ void Display::drawFastRawHLine(int16_t x, int16_t y, int16_t w,
   // do the next remainingWidthBits bits
   if (remainingWidthBits > 0) {
     size_t remainingWholeBytes = remainingWidthBits / 8;
-    size_t lastByteBits = remainingWidthBits % 8;
+    size_t lastByteBits = remainingWidthBits & 7;
     uint8_t wholeByteColor = color > 0 ? 0xFF : 0x00;
 
     memset(ptr, wholeByteColor, remainingWholeBytes);
