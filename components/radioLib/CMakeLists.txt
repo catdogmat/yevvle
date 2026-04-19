@@ -62,6 +62,8 @@ set(srcs
     RadioLib/src/modules/SX126x/SX1262.cpp
     RadioLib/src/modules/SX126x/SX1261.cpp
     RadioLib/src/modules/SX126x/SX126x.cpp
+    RadioLib/src/modules/SX126x/SX126x_commands.cpp
+    RadioLib/src/modules/SX126x/SX126x_config.cpp
     RadioLib/src/modules/SX126x/SX1268.cpp
     RadioLib/src/modules/SX126x/SX126x_LR_FHSS.cpp
     RadioLib/src/modules/SX126x/STM32WLx_Module.cpp
