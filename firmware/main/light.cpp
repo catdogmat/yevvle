@@ -28,9 +28,10 @@ bool Light::toggle() {
 }
 
 // Need to store this in RTC memory since will not be available in DeepSleep
-const RTC_SLOW_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kLightPin]];
+const RTC_SLOW_ATTR rtc_io_desc_t desc = rtc_io_desc[rtc_io_num_map[HW::kLightPin != (uint8_t)-1 ? HW::kLightPin : 0]];
 
 void Light::set(bool high) {
+  if (HW::kLightPin == (uint8_t)(-1)) return;
   // Caches previous values
   if (kPrev == high)
     return;
