@@ -1,4 +1,4 @@
-# LightMyInk project
+# LightInk project
 
 E-Ink ESP32 powered Watch that can run solely on solar power
 
@@ -10,7 +10,7 @@ Just clone everything (`git submodule update --init --recursive`)
 
 ## What is it?
 
-The main porpose of LightMyInk project is to have a functional and basic E-Ink watch that can be powered via Solar cell.
+The main porpose of LightInk project is to have a functional and basic E-Ink watch that can be powered via Solar cell.
 The project requires specific HW, and is based around the "Watchy" idea. But differs in:
 * Has a better TPS63900 power source of 2.6/2.9V
   * More efficient, less voltage, and dinamic adjust

@@ -1,40 +1,40 @@
 [submodule "esp-idf"]
-	path = esp-idf
+	path = firmware/esp-idf
 	url = https://github.com/DarkZeros/esp-idf
 	branch = v5.1
 [submodule "arduino"]
 	path = components/arduino
 	url = https://github.com/espressif/arduino-esp32.git
 [submodule "WiFiManager"]
-	path = components/WiFiManager/WiFiManager
+	path = firmware/components/WiFiManager/WiFiManager
 	url = https://github.com/tzapu/WiFiManager
 [submodule "BusIO"]
-	path = components/GfxLibrary/Adafruit_BusIO
+	path = firmware/components/GfxLibrary/Adafruit_BusIO
 	url = https://github.com/adafruit/Adafruit_BusIO
 [submodule "GfxLibrary"]
-	path = components/GfxLibrary/Adafruit-GFX-Library
+	path = firmware/components/GfxLibrary/Adafruit-GFX-Library
 	url = https://github.com/adafruit/Adafruit-GFX-Library
 [submodule "NTPClient"]
-	path = components/NTPClient/NTPClient
+	path = firmware/components/NTPClient/NTPClient
 	url = https://github.com/arduino-libraries/NTPClient
 [submodule "Time"]
-	path = components/Time/Time
+	path = firmware/components/Time/Time
 	url = https://github.com/PaulStoffregen/Time
 [submodule "ArduinoJson"]
-	path = components/ArduinoJson
+	path = firmware/components/ArduinoJson
 	url = https://github.com/bblanchon/ArduinoJson
 [submodule "ArduinoNvs"]
-	path = components/ArduinoNvs/ArduinoNvs
+	path = firmware/components/ArduinoNvs/ArduinoNvs
 	url = https://github.com/DarkZeros/ArduinoNvs
 [submodule "components/magic_enum/magic_enum"]
-	path = components/magic_enum/magic_enum
+	path = firmware/components/magic_enum/magic_enum
 	url = https://github.com/Neargye/magic_enum.git
 [submodule "components/sunset/sunset"]
-	path = components/sunset/sunset
+	path = firmware/components/sunset/sunset
 	url = https://github.com/buelowp/sunset
 [submodule "components/NeoGPS"]
 	path = components/NeoGPS
 	url = https://github.com/SlashDevin/NeoGPS
 [submodule "components/radioLib/RadioLib"]
-	path = components/radioLib/RadioLib
+	path = firmware/components/radioLib/RadioLib
 	url = https://github.com/jgromes/RadioLib

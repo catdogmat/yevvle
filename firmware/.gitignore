@@ -1,6 +1,6 @@
 # Ignore build output
-/build/
-/managed_components/
+build/
+managed_components/
 *.bin
 *.elf
 dependencies.lock
