@@ -1,6 +1,6 @@
-# <img src="docs/images/Logo.png" width="30"> LightInk project
+Yevvle
 
-E-Ink ESP32 powered Watch that can run solely on solar power!
+E-Ink ESP32 powered Watch that might at some point be able to run pebble apps.
 
 ## What is it?
 
